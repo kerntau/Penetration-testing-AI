@@ -3,13 +3,13 @@ package multiagent
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"cyberstrike-ai/internal/agent"
 	"cyberstrike-ai/internal/config"
 	"cyberstrike-ai/internal/database"
 	"cyberstrike-ai/internal/einomcp"
-	"cyberstrike-ai/internal/project"
 	"cyberstrike-ai/internal/reasoning"
 
 	"github.com/cloudwego/eino/adk"
@@ -148,15 +148,15 @@ func RunEinoSingleChatModelAgent(
 			UnknownToolsHandler: einomcp.UnknownToolReminderHandler(),
 			ToolCallMiddlewares: []compose.ToolMiddleware{
 				modelOutputExecutionGuardMiddleware(),
-				localToolRBACMiddleware(),
-				hitlToolCallMiddleware(),
 				softRecoveryToolMiddleware(),
 			},
 		},
 		EmitInternalEvents: true,
 	}
-	ins := project.AppendSystemPromptBlock(ag.EinoSingleAgentSystemInstruction(), systemPromptExtra)
-	ins = project.AppendVisionImageAnalysisIfReady(ins, appCfg.Vision.Ready())
+	ins := ag.EinoSingleAgentSystemInstruction()
+	if extra := strings.TrimSpace(systemPromptExtra); extra != "" {
+		ins = ins + "\n\n" + extra
+	}
 	ins = injectToolNamesOnlyInstruction(ctx, ins, mainTools, singleToolSearchActive)
 	if logger != nil {
 		names := collectToolNames(ctx, mainTools)

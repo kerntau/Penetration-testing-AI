@@ -41,17 +41,5 @@ func (h *RoleHandler) validateRole(role config.RoleConfig) error {
 			return fmt.Errorf("角色名称与已有角色的文件名冲突")
 		}
 	}
-	if strings.TrimSpace(role.WorkflowID) != "" {
-		if h.db == nil {
-			return fmt.Errorf("工作流存储不可用，无法验证绑定")
-		}
-		wf, err := h.db.GetWorkflowDefinition(role.WorkflowID)
-		if err != nil {
-			return fmt.Errorf("无法验证工作流绑定: %w", err)
-		}
-		if wf == nil {
-			return fmt.Errorf("角色绑定的工作流不存在")
-		}
-	}
 	return nil
 }

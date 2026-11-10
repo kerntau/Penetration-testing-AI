@@ -73,36 +73,3 @@ func TestEinoRunResultBuilderFallbackIgnoresBaseHistory(t *testing.T) {
 	}
 }
 
-func TestEinoRunResultBuilderPlanExecutePrefersExecutorOutput(t *testing.T) {
-	runMessages := newEinoRunMessageAccumulator(nil)
-	runMessages.Append(schema.AssistantMessage(`{"response":"planner text"}`, nil))
-	assistantOutput := newEinoAssistantOutputAccumulator("plan_execute")
-	assistantOutput.RecordMainAssistant("planner", `{"response":"planner text"}`)
-	assistantOutput.RecordMainAssistant("executor", `{"response":"executor text"}`)
-
-	got := newEinoRunResultBuilder(einoRunResultBuilderConfig{
-		OrchMode:        "plan_execute",
-		EmptyHint:       "empty",
-		RunMessages:     runMessages,
-		AssistantOutput: assistantOutput,
-	}).BuildFinal()
-
-	if got.Response != "executor text" {
-		t.Fatalf("response = %q, want executor text", got.Response)
-	}
-}
-
-func TestEinoRunResultBuilderPlanExecuteUnwrapsFallbackAssistant(t *testing.T) {
-	runMessages := newEinoRunMessageAccumulator(nil)
-	runMessages.Append(schema.AssistantMessage(`{"response":"fallback executor text"}`, nil))
-
-	got := newEinoRunResultBuilder(einoRunResultBuilderConfig{
-		OrchMode:    "plan_execute",
-		EmptyHint:   "empty",
-		RunMessages: runMessages,
-	}).BuildFinal()
-
-	if got.Response != "fallback executor text" {
-		t.Fatalf("response = %q, want fallback executor text", got.Response)
-	}
-}

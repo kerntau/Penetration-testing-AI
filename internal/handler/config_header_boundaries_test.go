@@ -1,13 +1,10 @@
 package handler
 
 import (
-	"context"
 	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/openai"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v3"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -39,25 +36,6 @@ func TestSavedHeaderProbeRestoresScopedSecret(t *testing.T) {
 		t.Fatalf("expected stored header, got %q", got)
 	}
 	t.Log("Saved header restored from matching channel")
-}
-func TestAuditIndependentProviderDoesNotReceiveMainHeaders(t *testing.T) {
-	var got string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		got = r.Header.Get("Authorization")
-		w.Write([]byte(`{}`))
-	}))
-	defer srv.Close()
-	main := config.OpenAIConfig{BaseURL: "https://main-provider.invalid", APIKey: "main-key", Model: "m", Headers: map[string]string{"Authorization": "Bearer main-header-secret"}}
-	audit := (config.HitlConfig{AuditModel: config.OpenAIConfig{BaseURL: srv.URL, APIKey: "audit-key", Model: "audit"}}).AuditModelEffective(main)
-	var out map[string]interface{}
-	err := openai.NewClient(&audit, nil, zap.NewNop()).ChatCompletion(context.Background(), map[string]string{"model": "audit"}, &out)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got != "Bearer audit-key" {
-		t.Fatalf("unexpected auth %q", got)
-	}
-	t.Log("Independent audit identity retained")
 }
 func TestProbeHeaderScopeAndTargetFailures(t *testing.T) {
 	stored := config.AIChannelConfig{Provider: "openai", BaseURL: "https://model.invalid/v1", APIKey: "key", Headers: map[string]string{"X-Api-Key": "stored-secret"}}
@@ -92,7 +70,7 @@ func TestProbeHeaderScopeAndTargetFailures(t *testing.T) {
 			}
 		})
 	}
-	for _, scope := range []string{"openai", "hitlAudit"} {
+	for _, scope := range []string{"openai"} {
 		r := base
 		r.ChannelID = ""
 		r.CredentialScope = scope
@@ -108,14 +86,6 @@ func TestProbeHeaderScopeAndTargetFailures(t *testing.T) {
 	if err != nil || got["X-Api-Key"] != "fresh" {
 		t.Fatal("fresh credential rejected")
 	}
-	h.config.Hitl.AuditModel = config.OpenAIConfig{BaseURL: "https://audit.invalid", APIKey: "audit-key"}
-	r = base
-	r.CredentialScope = "hitlAudit"
-	r.BaseURL = "https://audit.invalid"
-	r.APIKey = "audit-key"
-	if _, err = h.resolveProbeHeaders(r); err == nil {
-		t.Fatal("main credential restored for independent audit")
-	}
 }
 func TestProbeHeaderFailureMakesNoRequest(t *testing.T) {
 	calls := 0
@@ -130,41 +100,6 @@ func TestProbeHeaderFailureMakesNoRequest(t *testing.T) {
 	h.TestOpenAI(c)
 	if w.Code != 400 || calls != 0 {
 		t.Fatalf("status=%d outbound=%d", w.Code, calls)
-	}
-}
-
-func TestAuditHeadersPersistAndRestoreMaskedConfig(t *testing.T) {
-	cfg := &config.Config{Hitl: config.HitlConfig{AuditModel: config.OpenAIConfig{Headers: map[string]string{"X-Api-Key": "audit-test-secret"}}}}
-	response, err := maskedConfigResponse(configSecretSnapshot(cfg))
-	if err != nil {
-		t.Fatal(err)
-	}
-	raw, err := json.Marshal(response)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var req UpdateConfigRequest
-	if err = json.Unmarshal(raw, &req); err != nil {
-		t.Fatal(err)
-	}
-	if err = restoreConfigRequestSecrets(&req, cfg); err != nil {
-		t.Fatal(err)
-	}
-	var doc yaml.Node
-	if err = yaml.Unmarshal([]byte("hitl: {}\n"), &doc); err != nil {
-		t.Fatal(err)
-	}
-	updateHitlConfig(&doc, *req.Hitl)
-	raw, err = yaml.Marshal(&doc)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var saved config.Config
-	if err = yaml.Unmarshal(raw, &saved); err != nil {
-		t.Fatal(err)
-	}
-	if saved.Hitl.AuditModel.Headers["X-Api-Key"] != "audit-test-secret" {
-		t.Fatal("audit header lost on save")
 	}
 }
 
@@ -202,21 +137,4 @@ func TestPrivateHeaderNamesAreMaskedAndRestored(t *testing.T) {
 		}
 	}
 }
-func TestEmptyAuditHeadersRoundTripPreservesPolicy(t *testing.T) {
-	main := config.OpenAIConfig{Headers: map[string]string{"Authorization": "Bearer main"}}
-	for _, identity := range []string{"", "https://audit.invalid"} {
-		hitl := config.HitlConfig{AuditModel: config.OpenAIConfig{BaseURL: identity, Headers: map[string]string{}}}
-		before := hitl.AuditModelEffective(main).Headers["Authorization"]
-		var doc yaml.Node
-		yaml.Unmarshal([]byte("hitl: {}\n"), &doc)
-		updateHitlConfig(&doc, hitl)
-		raw, _ := yaml.Marshal(&doc)
-		var saved config.Config
-		if err := yaml.Unmarshal(raw, &saved); err != nil {
-			t.Fatal(err)
-		}
-		if after := saved.Hitl.AuditModelEffective(main).Headers["Authorization"]; after != before {
-			t.Fatalf("round trip changed header policy: %q -> %q", before, after)
-		}
-	}
-}
+

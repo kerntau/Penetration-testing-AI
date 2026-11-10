@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -202,6 +203,9 @@ func (db *DB) SetChatUploadsDir(dir string) {
 
 // initTables 初始化数据库表
 func (db *DB) initTables() error {
+	if err := db.dropRemovedFeatureTables(); err != nil {
+		return fmt.Errorf("清理已下线功能的历史表失败: %w", err)
+	}
 	if err := db.reconcileSchema(applicationSchema); err != nil {
 		return err
 	}
@@ -219,9 +223,94 @@ func (db *DB) initTables() error {
 	return nil
 }
 
+// removedFeatureTables 已下线功能对应的历史表。升级时直接删除，避免残留数据继续占用空间。
+var removedFeatureTables = []string{
+	"assets",
+	"attack_chain_edges",
+	"attack_chain_nodes",
+	"audit_logs",
+	"batch_task_queues",
+	"batch_tasks",
+	"c2_events",
+	"c2_files",
+	"c2_http_session_auth",
+	"c2_listeners",
+	"c2_profiles",
+	"c2_sessions",
+	"c2_tasks",
+	"chat_upload_artifacts",
+	"hitl_conversation_configs",
+	"hitl_interrupts",
+	"knowledge_retrieval_logs",
+	"notification_reads_by_user",
+	"project_fact_edges",
+	"project_facts",
+	"projects",
+	"rbac_permissions",
+	"rbac_resource_assignments",
+	"rbac_role_permissions",
+	"rbac_roles",
+	"rbac_user_roles",
+	"rbac_users",
+	"robot_binding_codes",
+	"robot_user_bindings",
+	"robot_user_sessions",
+	"vulnerability_alert_deliveries",
+	"vulnerability_alert_subscriptions",
+	"workflow_definitions",
+	"workflow_node_runs",
+	"workflow_package_imports",
+	"workflow_package_inspections",
+	"workflow_runs",
+}
+
+// dropRemovedFeatureTables 删除已下线功能的历史表。
+// 旧库升级时这些表仍会存在并带着历史数据；新库则本就不会创建它们。
+func (db *DB) dropRemovedFeatureTables() error {
+	ctx := context.Background()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	// 表之间存在外键，逐张删除前先关闭外键检查；PRAGMA 必须在事务外执行才生效。
+	if _, err := conn.ExecContext(ctx, "PRAGMA foreign_keys=OFF"); err != nil {
+		return err
+	}
+	defer conn.ExecContext(ctx, "PRAGMA foreign_keys=ON")
+
+	names := make([]string, 0, len(removedFeatureTables)+4)
+	names = append(names, removedFeatureTables...)
+
+	// 远程会话类旧表按名称模式匹配，避免遗漏历史命名。
+	rows, err := conn.QueryContext(ctx, `SELECT name FROM sqlite_master WHERE type='table' AND (name LIKE 'c2_%' OR name LIKE '%_connections' OR name LIKE '%_connection_states')`)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var name string
+		if scanErr := rows.Scan(&name); scanErr != nil {
+			rows.Close()
+			return scanErr
+		}
+		names = append(names, name)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	for _, name := range names {
+		if _, err := conn.ExecContext(ctx, "DROP TABLE IF EXISTS "+name); err != nil {
+			return fmt.Errorf("删除表 %s 失败: %w", name, err)
+		}
+	}
+	return nil
+}
+
 // NewKnowledgeDB 创建知识库数据库连接（只包含知识库相关的表）
-func NewKnowledgeDB(dbPath string, logger *zap.Logger) (*DB, error) {
-	sqlDB, err := sql.Open("sqlite3", sqliteOpenDSN(dbPath))
+func NewKnowledgeDB(dbPath string, logger *zap.Logger) (*DB, error) {	sqlDB, err := sql.Open("sqlite3", sqliteOpenDSN(dbPath))
 	if err != nil {
 		return nil, fmt.Errorf("打开知识库数据库失败: %w", err)
 	}

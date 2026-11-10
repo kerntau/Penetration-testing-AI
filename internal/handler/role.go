@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strings"
 
-	"cyberstrike-ai/internal/audit"
 	"cyberstrike-ai/internal/config"
 	"cyberstrike-ai/internal/database"
 
@@ -23,16 +22,10 @@ type RoleHandler struct {
 	config     *config.Config
 	configPath string
 	logger     *zap.Logger
-	audit      *audit.Service
 	db         *database.DB
 }
 
 func (h *RoleHandler) SetDB(db *database.DB) { h.db = db }
-
-// SetAudit wires platform audit logging.
-func (h *RoleHandler) SetAudit(s *audit.Service) {
-	h.audit = s
-}
 
 // NewRoleHandler 创建新的角色处理器
 func NewRoleHandler(cfg *config.Config, configPath string, logger *zap.Logger) *RoleHandler {
@@ -195,9 +188,6 @@ func (h *RoleHandler) UpdateRole(c *gin.Context) {
 	}
 
 	h.logger.Info("更新角色", zap.String("oldKey", roleName), zap.String("newKey", finalKey), zap.String("name", req.Name))
-	if h.audit != nil {
-		h.audit.RecordOK(c, "role", "update", "更新角色", "role", finalKey, map[string]interface{}{"name": req.Name})
-	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "角色已更新",
 		"role":    req,
@@ -243,9 +233,6 @@ func (h *RoleHandler) CreateRole(c *gin.Context) {
 	}
 
 	h.logger.Info("创建角色", zap.String("roleName", req.Name))
-	if h.audit != nil {
-		h.audit.RecordOK(c, "role", "create", "创建角色", "role", req.Name, nil)
-	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "角色已创建",
 		"role":    req,
@@ -314,9 +301,6 @@ func (h *RoleHandler) DeleteRole(c *gin.Context) {
 	}
 
 	h.logger.Info("删除角色", zap.String("roleName", roleName))
-	if h.audit != nil {
-		h.audit.RecordOK(c, "role", "delete", "删除角色", "role", roleName, nil)
-	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "角色已删除",
 	})

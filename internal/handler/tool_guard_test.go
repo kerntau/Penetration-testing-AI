@@ -13,8 +13,6 @@ import (
 	"testing"
 
 	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/database"
-	"cyberstrike-ai/internal/security"
 	"cyberstrike-ai/internal/toolguard"
 
 	"github.com/gin-gonic/gin"
@@ -24,7 +22,7 @@ import (
 func newToolGuardTestHandler(t *testing.T) *ConfigHandler {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "config.yaml")
-	if err := os.WriteFile(path, []byte("# keep this comment\nserver:\n  port: 8123\nhitl:\n  tool_whitelist: [read_file]\n"), 0600); err != nil {
+	if err := os.WriteFile(path, []byte("# keep this comment\nserver:\n  port: 8123\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	manager, err := toolguard.NewManager(toolguard.DefaultConfig())
@@ -48,7 +46,7 @@ func toolGuardRequest(t *testing.T, handler gin.HandlerFunc, body interface{}) *
 	return w
 }
 
-func TestToolGuardSavePersistsAndAppliesWithoutChangingHITL(t *testing.T) {
+func TestToolGuardSavePersistsAndAppliesWithoutChangingOtherSettings(t *testing.T) {
 	h := newToolGuardTestHandler(t)
 	before, err := os.Stat(h.configPath)
 	if err != nil {
@@ -67,7 +65,7 @@ func TestToolGuardSavePersistsAndAppliesWithoutChangingHITL(t *testing.T) {
 	if !reflect.DeepEqual(loaded.EffectiveToolGuard(), cfg) || !reflect.DeepEqual(h.toolGuard.Config(), cfg) {
 		t.Fatal("saved and effective policies differ")
 	}
-	if loaded.Server.Port != 8123 || !reflect.DeepEqual(loaded.Hitl.ToolWhitelist, []string{"read_file"}) {
+	if loaded.Server.Port != 8123 {
 		t.Fatal("unrelated configuration was changed")
 	}
 	info, _ := os.Stat(h.configPath)
@@ -131,35 +129,6 @@ func TestToolGuardDryRunUsesUnsavedPolicyWithoutMutation(t *testing.T) {
 	w = toolGuardRequest(t, h.TestToolGuard, map[string]interface{}{"config": cfg, "arguments": []string{"example.org"}})
 	if w.Code != http.StatusBadRequest {
 		t.Fatal("non-object tool arguments accepted")
-	}
-}
-
-func TestToolGuardRoutesEnforceConfigurationPermissions(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	for _, tc := range []struct {
-		method, path, permission, scope string
-		want                            int
-	}{
-		{"GET", "/api/tool-guard", "hitl:read", database.RBACScopeAll, 403},
-		{"PUT", "/api/tool-guard", "hitl:write", database.RBACScopeAll, 403},
-		{"GET", "/api/tool-guard", "config:read", database.RBACScopeAll, 200},
-		{"POST", "/api/tool-guard/test", "config:read", database.RBACScopeAll, 200},
-		{"PUT", "/api/tool-guard", "config:write", database.RBACScopeAll, 200},
-		{"PUT", "/api/tool-guard", "config:write", database.RBACScopeOwn, 403},
-	} {
-		t.Run(tc.method+tc.permission+tc.scope, func(t *testing.T) {
-			r := gin.New()
-			r.Use(func(c *gin.Context) {
-				c.Set(security.ContextSessionKey, security.Session{UserID: "test", Permissions: map[string]bool{tc.permission: true}, Scope: tc.scope})
-			})
-			r.Use(security.RBACMiddleware(&database.DB{}))
-			r.Handle(tc.method, tc.path, func(c *gin.Context) { c.Status(200) })
-			w := httptest.NewRecorder()
-			r.ServeHTTP(w, httptest.NewRequest(tc.method, tc.path, nil))
-			if w.Code != tc.want {
-				t.Fatalf("got %d, want %d: %s", w.Code, tc.want, w.Body.String())
-			}
-		})
 	}
 }
 

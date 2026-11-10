@@ -25,7 +25,7 @@ func (s staticConversationTaskState) ConversationTaskRuntimeState(string) (bool,
 	return s.running, s.startedAt
 }
 
-func TestGetConversationPlanTasksRequiresAccessAndReportsProgress(t *testing.T) {
+func TestGetConversationPlanTasksReportsProgress(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	tmp := t.TempDir()
 	db, err := database.NewDB(filepath.Join(tmp, "conversation-plantask.db"), zap.NewNop())
@@ -36,10 +36,6 @@ func TestGetConversationPlanTasksRequiresAccessAndReportsProgress(t *testing.T) 
 	conversation, err := db.CreateConversation("plan", database.ConversationCreateMeta{})
 	if err != nil {
 		t.Fatalf("CreateConversation: %v", err)
-	}
-	user, err := db.CreateRBACUser("plan-user", "Plan User", "hash", true, nil)
-	if err != nil {
-		t.Fatalf("CreateRBACUser: %v", err)
 	}
 	base := filepath.Join(tmp, "plantask")
 	db.SetEinoConversationDirs(base, "", "", "")
@@ -65,23 +61,16 @@ func TestGetConversationPlanTasksRequiresAccessAndReportsProgress(t *testing.T) 
 		c.Request = httptest.NewRequest(http.MethodGet, "/api/conversations/"+conversation.ID+"/plan-tasks", nil)
 		c.Params = gin.Params{{Key: "id", Value: conversation.ID}}
 		c.Set(security.ContextSessionKey, security.Session{
-			UserID: user.ID,
-			Scope:  database.RBACScopeAssigned,
+			UserID: "plan-user",
+			Scope:  database.RBACScopeAll,
 		})
 		handler.GetConversationPlanTasks(c)
 		return w
 	}
 
 	w := request()
-	if w.Code != http.StatusForbidden {
-		t.Fatalf("unassigned status = %d, want %d", w.Code, http.StatusForbidden)
-	}
-	if err := db.AssignResourceToUser(user.ID, "conversation", conversation.ID); err != nil {
-		t.Fatalf("AssignResourceToUser: %v", err)
-	}
-	w = request()
 	if w.Code != http.StatusOK {
-		t.Fatalf("assigned status = %d: %s", w.Code, w.Body.String())
+		t.Fatalf("status = %d: %s", w.Code, w.Body.String())
 	}
 	var response struct {
 		Total      int                             `json:"total"`
@@ -110,13 +99,6 @@ func TestGetConversationPlanTasksReportsStoppedLiveTask(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateConversation: %v", err)
 	}
-	user, err := db.CreateRBACUser("stopped-plan-user", "Stopped Plan User", "hash", true, nil)
-	if err != nil {
-		t.Fatalf("CreateRBACUser: %v", err)
-	}
-	if err := db.AssignResourceToUser(user.ID, "conversation", conversation.ID); err != nil {
-		t.Fatalf("AssignResourceToUser: %v", err)
-	}
 	base := filepath.Join(tmp, "plantask")
 	db.SetEinoConversationDirs(base, "", "", "")
 	dir := filepath.Join(base, conversation.ID)
@@ -133,7 +115,7 @@ func TestGetConversationPlanTasksReportsStoppedLiveTask(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 	c.Request = httptest.NewRequest(http.MethodGet, "/api/conversations/"+conversation.ID+"/plan-tasks", nil)
 	c.Params = gin.Params{{Key: "id", Value: conversation.ID}}
-	c.Set(security.ContextSessionKey, security.Session{UserID: user.ID, Scope: database.RBACScopeAssigned})
+	c.Set(security.ContextSessionKey, security.Session{UserID: "stopped-plan-user", Scope: database.RBACScopeAll})
 	handler.GetConversationPlanTasks(c)
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d: %s", w.Code, w.Body.String())

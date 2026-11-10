@@ -18,17 +18,18 @@ import (
 	"go.uber.org/zap"
 )
 
-func (h *AgentHandler) SubmitSingleAgentRun(c *gin.Context) { h.submitAgentRun(c, false) }
-func (h *AgentHandler) SubmitMultiAgentRun(c *gin.Context)  { h.submitAgentRun(c, true) }
-func (h *AgentHandler) submitAgentRun(c *gin.Context, multi bool) {
-	h.submitAgentRunWithExecutor(c, multi, h.executeAcceptedRun)
+// SubmitSingleAgentRun 接受一次异步单代理运行，返回可用于轮询的运行回执。
+func (h *AgentHandler) SubmitSingleAgentRun(c *gin.Context) { h.submitAgentRun(c) }
+
+func (h *AgentHandler) submitAgentRun(c *gin.Context) {
+	h.submitAgentRunWithExecutor(c, h.executeAcceptedRun)
 }
 
-type acceptedRunExecutor func(context.Context, context.Context, context.CancelCauseFunc, context.CancelFunc, ChatRequest, *multiAgentPrepared, *database.AgentRun, bool)
+type acceptedRunExecutor func(context.Context, context.Context, context.CancelCauseFunc, context.CancelFunc, ChatRequest, *agentSessionPrepared, *database.AgentRun)
 
-func (h *AgentHandler) submitAgentRunWithExecutor(c *gin.Context, multi bool, execute acceptedRunExecutor) {
+func (h *AgentHandler) submitAgentRunWithExecutor(c *gin.Context, execute acceptedRunExecutor) {
 	session, ok := security.CurrentSession(c)
-	if !ok || !session.Permissions["chat:write"] || !session.Permissions["agent:execute"] {
+	if !ok {
 		c.JSON(403, gin.H{"error": "forbidden"})
 		return
 	}
@@ -42,10 +43,7 @@ func (h *AgentHandler) submitAgentRunWithExecutor(c *gin.Context, multi bool, ex
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	raw, _ := json.Marshal(struct {
-		Request ChatRequest
-		Multi   bool
-	}{req, multi})
+	raw, _ := json.Marshal(req)
 	sum := sha256.Sum256(raw)
 	fingerprint := hex.EncodeToString(sum[:])
 	// Serialize acceptance, not execution. A retry cannot create messages before its receipt is checked.
@@ -68,7 +66,7 @@ func (h *AgentHandler) submitAgentRunWithExecutor(c *gin.Context, multi bool, ex
 		c.JSON(500, gin.H{"error": "cannot read run receipt"})
 		return
 	}
-	if h.config == nil || (multi && !h.config.MultiAgent.Enabled) {
+	if h.config == nil {
 		c.JSON(400, gin.H{"error": "agent mode unavailable"})
 		return
 	}
@@ -86,13 +84,9 @@ func (h *AgentHandler) submitAgentRunWithExecutor(c *gin.Context, multi bool, ex
 			return
 		}
 	}
-	source := "eino_agent_async"
-	if multi {
-		source = "multi_agent_async"
-	}
-	prep, err := h.prepareMultiAgentSession(&req, c, source)
+	prep, err := h.prepareAgentSession(&req, "eino_agent_async")
 	if err != nil {
-		code, msg := multiAgentHTTPErrorStatus(err)
+		code, msg := agentSessionHTTPErrorStatus(err)
 		c.JSON(code, gin.H{"error": msg})
 		return
 	}
@@ -120,7 +114,7 @@ func (h *AgentHandler) submitAgentRunWithExecutor(c *gin.Context, multi bool, ex
 	h.asyncWorkers.Add(1)
 	go func() {
 		defer h.asyncWorkers.Done()
-		execute(ctx, base, cancel, timeoutCancel, req, prep, record, multi)
+		execute(ctx, base, cancel, timeoutCancel, req, prep, record)
 	}()
 	h.agentRunReceipt(c, record)
 }
@@ -145,25 +139,13 @@ func (h *AgentHandler) GetAgentRun(c *gin.Context) {
 	}
 	c.JSON(200, r)
 }
-func (h *AgentHandler) executeAcceptedRun(ctx, base context.Context, cancel context.CancelCauseFunc, timeoutCancel context.CancelFunc, req ChatRequest, prep *multiAgentPrepared, record *database.AgentRun, multi bool) {
+func (h *AgentHandler) executeAcceptedRun(ctx, base context.Context, cancel context.CancelCauseFunc, timeoutCancel context.CancelFunc, req ChatRequest, prep *agentSessionPrepared, record *database.AgentRun) {
 	h.executeAcceptedRunBody(ctx, base, cancel, timeoutCancel, prep, record, func(status *string, respond func(int, interface{})) {
-		h.activateHITLForConversation(prep.ConversationID, req.Hitl)
-		if h.hitlManager != nil {
-			defer h.hitlManager.DeactivateConversation(prep.ConversationID)
-		}
-		if role, ok := h.roleForWorkflow(&req); ok {
-			h.runWorkflowJSON(ctx, base, cancel, &req, prep, role, status, respond)
-			return
-		}
-		if multi {
-			h.runMultiJSON(ctx, base, cancel, &req, prep, status, respond)
-		} else {
-			h.runSingleJSON(ctx, base, cancel, &req, prep, status, respond)
-		}
+		h.runSingleJSON(ctx, base, cancel, &req, prep, status, respond)
 	})
 }
 
-func (h *AgentHandler) executeAcceptedRunBody(ctx, base context.Context, cancel context.CancelCauseFunc, timeoutCancel context.CancelFunc, prep *multiAgentPrepared, record *database.AgentRun, body func(*string, func(int, interface{}))) {
+func (h *AgentHandler) executeAcceptedRunBody(ctx, base context.Context, cancel context.CancelCauseFunc, timeoutCancel context.CancelFunc, prep *agentSessionPrepared, record *database.AgentRun, body func(*string, func(int, interface{}))) {
 	status := "failed"
 	var result interface{} = gin.H{"error": "execution ended without a result"}
 	defer func() {

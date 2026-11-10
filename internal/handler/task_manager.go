@@ -58,9 +58,6 @@ type AgentTask struct {
 	// activeEinoExecuteAbortNote AbortActiveEinoExecute 写入的用户说明，由 execute 收尾时合并进工具结果
 	activeEinoExecuteAbortNote string
 
-	// hitlCognition 本轮运行中供 HITL/审计 Agent 读取的上下文（用户原话 + 思考，不含会话历史）
-	hitlCognition *hitlCognitionState
-
 	// agentRuntimeCancel 当前 Eino ADK 原生 AgentCancelFunc 包装；取消任务时先触发它，再走 context 兜底。
 	agentRuntimeCancel        func(error) bool
 	agentRuntimeCancelVersion uint64
@@ -467,7 +464,6 @@ func (m *AgentTaskManager) StartTask(conversationID, message string, cancel cont
 	}
 
 	m.tasks[conversationID] = task
-	task.hitlCognition = &hitlCognitionState{UserMessage: strings.TrimSpace(message)}
 	return task, nil
 }
 

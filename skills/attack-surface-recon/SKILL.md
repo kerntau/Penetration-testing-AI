@@ -9,7 +9,7 @@ metadata:
 ## 侦察 / 攻击面测绘
 
 ```
-=== 侦察/攻击面测绘(开局第一动作,60%战时在这,别裸奔进利用;端口/指纹等立即 upsert_project_fact) ===
+=== 侦察/攻击面测绘(开局第一动作,60%战时在这,别裸奔进利用;端口/指纹等立即记录) ===
 被动先行(不碰目标,全部执行):
   terminal: whois {domain} | grep -iE 'org|name|email|registrant'
   terminal: amass intel -asn {ASN} -d {domain}

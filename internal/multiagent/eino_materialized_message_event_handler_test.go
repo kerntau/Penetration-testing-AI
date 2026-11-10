@@ -58,34 +58,6 @@ func TestEinoMaterializedMessageEventHandlerHandlesMainAssistant(t *testing.T) {
 	}
 }
 
-func TestEinoMaterializedMessageEventHandlerHandlesSubAssistant(t *testing.T) {
-	var events []string
-	runMessages := newEinoRunMessageAccumulator(nil)
-	assistantOutput := newEinoAssistantOutputAccumulator("deep")
-	handler := newEinoMaterializedMessageEventHandler(einoMaterializedMessageEventHandlerConfig{
-		ConversationID:       "conv-1",
-		OrchMode:             "deep",
-		Progress:             func(eventType, _ string, _ interface{}) { events = append(events, eventType) },
-		RunMessages:          runMessages,
-		AssistantOutput:      assistantOutput,
-		StreamsMainAssistant: func(agent string) bool { return agent == "lead" },
-		EinoRoleTag:          func(string) string { return "sub" },
-	})
-
-	if !handler.Handle(&adk.MessageVariant{Role: schema.Assistant}, schema.AssistantMessage("sub done", nil), "worker") {
-		t.Fatal("sub assistant message was not handled")
-	}
-	if assistantOutput.LastAssistant() != "" {
-		t.Fatalf("sub assistant should not update main output, got %q", assistantOutput.LastAssistant())
-	}
-	if len(runMessages.Messages()) != 1 {
-		t.Fatalf("run messages = %#v, want appended original message", runMessages.Messages())
-	}
-	if !containsString(events, "eino_agent_reply") {
-		t.Fatalf("events = %#v, want sub reply event", events)
-	}
-}
-
 func TestEinoMaterializedMessageEventHandlerHandlesToolCallsAndToolResult(t *testing.T) {
 	var events []string
 	var marked []toolCallPendingInfo

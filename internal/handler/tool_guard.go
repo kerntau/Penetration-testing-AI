@@ -109,11 +109,6 @@ func (h *ConfigHandler) UpdateToolGuard(c *gin.Context) {
 	}
 	h.config.ToolGuard = &cfg
 	h.toolGuardRevision = uuid.NewString()
-	if h.audit != nil {
-		h.audit.RecordOK(c, "config", "tool_guard_update", "更新调用拦截规则", "config", "tool_guard", map[string]interface{}{
-			"enabled": cfg.Enabled, "rule_count": len(cfg.Rules),
-		})
-	}
 	c.Header("ETag", h.toolGuardETag())
 	c.Header("Cache-Control", "no-store")
 	c.JSON(http.StatusOK, h.toolGuard.Config())

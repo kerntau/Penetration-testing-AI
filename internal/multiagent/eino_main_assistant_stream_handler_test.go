@@ -80,24 +80,3 @@ func TestEinoMainAssistantStreamHandlerSuppressesDuplicateExecuteStdout(t *testi
 	}
 }
 
-func TestEinoMainAssistantStreamHandlerRecordsWithoutProgress(t *testing.T) {
-	out := newEinoAssistantOutputAccumulator("plan_execute")
-	runMsgs := newEinoRunMessageAccumulator(nil)
-	handler := newEinoMainAssistantStreamHandler(einoMainAssistantStreamHandlerConfig{
-		AgentName:       "executor",
-		Emitter:         newEinoMainResponseStreamEmitter("conv-1", "plan_execute", "executor", "stream-1", 1, nil, nil),
-		AssistantOutput: out,
-		RunMessages:     runMsgs,
-	})
-
-	handler.EmitDelta(`{"response":"done"}`)
-	if got := handler.Finish(); got != `{"response":"done"}` {
-		t.Fatalf("finish = %q", got)
-	}
-	if out.LastPlanExecuteExecutor() != "done" {
-		t.Fatalf("executor output = %q", out.LastPlanExecuteExecutor())
-	}
-	if msgs := runMsgs.Messages(); len(msgs) != 1 || msgs[0].Content != `{"response":"done"}` {
-		t.Fatalf("run messages = %#v", msgs)
-	}
-}

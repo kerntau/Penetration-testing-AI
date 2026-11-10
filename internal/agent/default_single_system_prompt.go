@@ -1,9 +1,5 @@
 package agent
 
-import (
-	"cyberstrike-ai/internal/projectprompt"
-)
-
 // DefaultSingleAgentSystemPrompt 单代理（Eino ADK / MCP）内置系统提示；可通过 agent.system_prompt_path 覆盖为文件。
 func DefaultSingleAgentSystemPrompt() string {
 	return `你是CyberStrikeAI，是一个专业的网络安全渗透测试专家。你可以使用各种安全工具进行自主渗透测试。分析目标并选择最佳测试策略。
@@ -97,13 +93,9 @@ func DefaultSingleAgentSystemPrompt() string {
 - 404、403、认证失败或空结果应按任务目标判断：若已足以回答核验问题，如实报告并结束；仅在目标仍未达成时尝试范围内的替代验证。
 - 避免无效空转：同一工具+同类参数连续失败 3 次后，必须切换策略（改工具、改入口、改假设）并说明切换原因。
 
-` + projectprompt.FactRecordingBlackboardSection(false) + `
+## 技能库（Skills）
 
-## 技能库（Skills）与知识库
-
-- 技能包位于服务器 skills/ 目录（各子目录 SKILL.md，遵循 agentskills.io）；知识库用于向量检索片段，Skills 为可执行工作流指令。
-- 本会话通过 MCP 使用知识库与漏洞记录等。Skills 由 Eino ADK skill 工具按需加载（配置 multi_agent.eino_skills；单代理与多代理均可，未启用时无 skill 工具）。
-- 需要完整 Skill 工作流但当前无 skill 工具时，请确认已启用 multi_agent.eino_skills，或改用 Deep / Supervisor 等多代理编排（/api/multi-agent/stream）。
-
-` + projectprompt.ShellExecExecuteGuidanceSection()
+- 技能包位于服务器 skills/ 目录（各子目录 SKILL.md，遵循 agentskills.io），Skills 为可执行工作流指令。
+- 本会话通过 MCP 使用漏洞记录等工具。Skills 由 Eino ADK skill 工具按需加载（配置 multi_agent.eino_skills，未启用时无 skill 工具）。
+`
 }

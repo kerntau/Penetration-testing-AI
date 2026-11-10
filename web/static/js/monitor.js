@@ -3011,7 +3011,6 @@ function handleStreamEvent(event, progressElement, progressId,
                 setCurrentConversationIdFromStream(event.data.conversationId);
                 syncAgentLiveStreamConversationId(event.data.conversationId);
                 updateActiveConversation();
-                addAttackChainButton(currentConversationId);
                 loadActiveTasks();
                 // 延迟刷新对话列表，确保用户消息已保存，updated_at已更新
                 // 这样新对话才能正确显示在最近对话列表的顶部
@@ -3019,9 +3018,6 @@ function handleStreamEvent(event, progressElement, progressId,
                 setTimeout(() => {
                     if (typeof loadConversations === 'function') {
                         loadConversations();
-                    }
-                    if (typeof window.refreshChatProjectFolders === 'function') {
-                        window.refreshChatProjectFolders();
                     }
                 }, 200);
             }
@@ -3181,44 +3177,6 @@ function handleStreamEvent(event, progressElement, progressId,
                 title: '🤖 Agent 输出' + (label ? (' · ' + label) : ''),
                 message: event.message || '',
                 data: d
-            });
-            break;
-        }
-
-        case 'workflow_hitl_checkpoint': {
-            addTimelineItem(timeline, 'workflow_hitl_checkpoint', {
-                title: '🧑‍⚖️ 人工确认检查点',
-                message: event.message || '',
-                data: event.data || {}
-            });
-            break;
-        }
-
-        case 'workflow_hitl_waiting': {
-            const d = event.data || {};
-            const hitlItemId = addTimelineItem(timeline, 'workflow_hitl_waiting', {
-                title: '🧑‍⚖️ 工作流等待审批',
-                message: event.message || '',
-                data: d
-            });
-            renderInlineWorkflowHitlApproval(hitlItemId, d);
-            break;
-        }
-
-        case 'workflow_hitl_resumed': {
-            addTimelineItem(timeline, 'workflow_hitl_resumed', {
-                title: '✅ 审批已通过',
-                message: event.message || '人工审批已通过，继续执行',
-                data: event.data || {}
-            });
-            break;
-        }
-
-        case 'workflow_hitl_rejected': {
-            addTimelineItem(timeline, 'workflow_hitl_rejected', {
-                title: '❌ 审批已拒绝',
-                message: event.message || '',
-                data: event.data || {}
             });
             break;
         }
@@ -3898,7 +3856,6 @@ function handleStreamEvent(event, progressElement, progressId,
                 setCurrentConversationIdFromStream(responseData.conversationId);
                 syncAgentLiveStreamConversationId(responseData.conversationId);
                 updateActiveConversation();
-                addAttackChainButton(currentConversationId);
                 updateProgressConversation(progressId, responseData.conversationId);
                 loadActiveTasks();
             }
@@ -4026,7 +3983,6 @@ function handleStreamEvent(event, progressElement, progressId,
                 setCurrentConversationIdFromStream(responseData.conversationId);
                 syncAgentLiveStreamConversationId(responseData.conversationId);
                 updateActiveConversation();
-                addAttackChainButton(currentConversationId);
                 updateProgressConversation(progressId, responseData.conversationId);
                 loadActiveTasks();
             }
@@ -4205,7 +4161,6 @@ function handleStreamEvent(event, progressElement, progressId,
                 setCurrentConversationIdFromStream(event.data.conversationId);
                 syncAgentLiveStreamConversationId(event.data.conversationId);
                 updateActiveConversation();
-                addAttackChainButton(currentConversationId);
                 updateProgressConversation(progressId, event.data.conversationId);
             }
             if (progressTaskState.has(progressId)) {
@@ -5061,11 +5016,6 @@ function reconcilePendingHitlState(rawItems) {
     if (!dockInterruptId || dockInterruptId !== currentPending.interruptId || dock.hidden) {
         renderChatHitlApprovalDock(currentPending);
     }
-    const inlineSelector = '.hitl-inline-approval[data-hitl-interrupt-id="' +
-        hitlEscapeAttrSelector(currentPending.interruptId) + '"]';
-    if (!document.querySelector(inlineSelector)) {
-        restoreHitlInlineForConversation(currentId);
-    }
 }
 
 window.renderChatHitlApprovalDock = renderChatHitlApprovalDock;
@@ -5083,225 +5033,6 @@ function markInlineHitlDecision(panel, decision, message) {
         ${message ? '<p class="hitl-codex-explainer">' + escapeHtml(message) + '</p>' : ''}
     `;
 }
-
-function renderInlineWorkflowHitlApproval(itemId, data) {
-    const item = document.getElementById(itemId);
-    if (!item || !data) return;
-    const runId = data.workflowRunId || data.workflow_run_id;
-    if (!runId) return;
-    let contentEl = item.querySelector('.timeline-item-content');
-    if (!contentEl) {
-        contentEl = document.createElement('div');
-        contentEl.className = 'timeline-item-content';
-        item.appendChild(contentEl);
-    }
-    const existingPanel = contentEl.querySelector('.workflow-hitl-inline-approval');
-    if (existingPanel) existingPanel.remove();
-
-    const label = data.label || data.nodeId || runId;
-    const prompt = data.prompt || '';
-    const panel = document.createElement('div');
-    panel.className = 'workflow-hitl-inline-approval hitl-inline-approval';
-    panel.dataset.conversationId = String(data.conversationId || window.currentConversationId || '').trim();
-    panel.innerHTML = `
-        <div class="hitl-inline-header">
-            <div class="hitl-inline-title">
-                <span class="hitl-inline-icon" aria-hidden="true">!</span>
-                <span>工作流审批</span>
-            </div>
-            <div class="hitl-inline-badges">
-                <span class="hitl-tool-badge">${escapeHtml(label)}</span>
-                <span class="hitl-mode-tag hitl-mode-tag--approval">审批模式</span>
-            </div>
-        </div>
-        <div class="hitl-inline-body">
-            ${prompt ? `<div class="hitl-inline-note">${escapeHtml(prompt)}</div>` : '<div class="hitl-inline-note">工作流暂停，等待你确认是否继续。</div>'}
-            <label class="hitl-inline-field">
-                <span class="hitl-context-label">备注（可选）</span>
-                <input class="hitl-config-input workflow-hitl-inline-comment" type="text" placeholder="审批意见">
-            </label>
-        </div>
-        <div class="hitl-pending-actions hitl-inline-actions">
-            <div class="hitl-input-help workflow-hitl-inline-status" aria-live="polite"></div>
-            <button class="btn-secondary workflow-hitl-inline-reject">拒绝</button>
-            <button class="btn-primary workflow-hitl-inline-approve">通过</button>
-        </div>
-    `;
-    contentEl.appendChild(panel);
-
-    const approveBtn = panel.querySelector('.workflow-hitl-inline-approve');
-    const rejectBtn = panel.querySelector('.workflow-hitl-inline-reject');
-    const commentInput = panel.querySelector('.workflow-hitl-inline-comment');
-    const statusEl = panel.querySelector('.workflow-hitl-inline-status');
-
-    const setBusy = function (busy) {
-        approveBtn.disabled = busy;
-        rejectBtn.disabled = busy;
-    };
-
-    const submit = async function (approved) {
-        setBusy(true);
-        const comment = String(commentInput.value || '').trim();
-        try {
-            const fetchFn = typeof apiFetch === 'function' ? apiFetch : fetch;
-            const response = await fetchFn(`/api/workflows/runs/${encodeURIComponent(runId)}/resume`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ approved: approved, comment: comment })
-            });
-            const body = response && typeof response.json === 'function' ? await response.json() : null;
-            if (!response || !response.ok) {
-                statusEl.textContent = (body && body.error) ? body.error : '提交失败，请重试';
-                setBusy(false);
-                return;
-            }
-            if (body && body.streamResuming) {
-                statusEl.textContent = approved ? '已通过，工作流继续执行中…' : '已拒绝';
-                panel.classList.add('hitl-inline-done');
-                return;
-            }
-            statusEl.textContent = approved ? '已通过，工作流继续执行' : '已拒绝';
-            panel.classList.add('hitl-inline-done');
-        } catch (e) {
-            statusEl.textContent = '提交失败：' + (e && e.message ? e.message : 'unknown error');
-            setBusy(false);
-        }
-    };
-
-    approveBtn.onclick = function () { submit(true); };
-    rejectBtn.onclick = function () { submit(false); };
-    setHitlApprovalTaskAvailability(panel, panel.dataset.conversationId);
-}
-
-function parseWorkflowHitlPendingJSON(raw) {
-    if (!raw) return {};
-    if (typeof raw === 'object') return raw;
-    try {
-        const o = JSON.parse(String(raw));
-        return o && typeof o === 'object' ? o : {};
-    } catch (e) {
-        return {};
-    }
-}
-
-function workflowHitlDataFromRun(run) {
-    if (!run) return null;
-    const runId = run.id || run.workflowRunId || run.workflow_run_id;
-    if (!runId) return null;
-    const pending = parseWorkflowHitlPendingJSON(run.pending_hitl_json || run.pendingHitlJson || run.pendingHitlJSON);
-    const pendingHitl = pending.pendingHitl && typeof pending.pendingHitl === 'object' ? pending.pendingHitl : pending;
-    return {
-        workflowRunId: String(runId),
-        nodeId: pendingHitl.nodeId || run.pending_hitl_node_id || run.pendingHitlNodeId || '',
-        label: pendingHitl.label || pendingHitl.nodeId || run.pending_hitl_node_id || run.pendingHitlNodeId || runId,
-        prompt: pendingHitl.prompt || '',
-        conversationId: run.conversation_id || run.conversationId || ''
-    };
-}
-
-function findWorkflowHitlTimelineItem(detailsContainer, runId) {
-    if (!detailsContainer || !runId) return null;
-    const rid = String(runId).trim();
-    const byRun = detailsContainer.querySelector('[data-workflow-run-id="' + hitlEscapeAttrSelector(rid) + '"]');
-    if (byRun) return byRun;
-    const items = detailsContainer.querySelectorAll('.timeline-item-workflow_hitl_waiting');
-    for (let i = items.length - 1; i >= 0; i--) {
-        const el = items[i];
-        if (!el.querySelector('.workflow-hitl-inline-approval.hitl-inline-done')) {
-            return el;
-        }
-    }
-    return items.length ? items[items.length - 1] : null;
-}
-
-/**
- * 刷新或切换会话后：根据 workflow_runs(awaiting_hitl) 恢复工作流内联审批入口。
- */
-async function restoreWorkflowHitlInlineForConversation(conversationId) {
-    if (!conversationId || typeof apiFetch !== 'function') return;
-    if (typeof window.currentConversationId === 'string' && window.currentConversationId !== conversationId) {
-        return;
-    }
-    try {
-        const resp = await apiFetch('/api/workflows/runs/pending?conversationId=' + encodeURIComponent(conversationId));
-        if (!resp.ok) return;
-        const data = await resp.json().catch(function () { return {}; });
-        const runs = Array.isArray(data.runs) ? data.runs : [];
-        if (!runs.length) return;
-
-        let msgEl = document.querySelector('#chat-messages [data-backend-message-id]');
-        const nodes = document.querySelectorAll('#chat-messages .message.assistant');
-        for (let i = nodes.length - 1; i >= 0; i--) {
-            if (nodes[i] && nodes[i].dataset && nodes[i].dataset.backendMessageId) {
-                msgEl = nodes[i];
-                break;
-            }
-        }
-        if (!msgEl || !msgEl.id) return;
-        const clientMsgId = msgEl.id;
-        const backendMsgId = msgEl.dataset.backendMessageId;
-        const detailsContainer = document.getElementById('process-details-' + clientMsgId);
-        if (!detailsContainer) return;
-
-        if (detailsContainer.dataset.lazyNotLoaded === '1' && detailsContainer.dataset.loaded !== '1') {
-            try {
-                detailsContainer.dataset.loading = '1';
-                if (typeof loadProcessDetailsPaginated === 'function') {
-                    await loadProcessDetailsPaginated(clientMsgId, backendMsgId);
-                } else if (typeof apiFetch === 'function' && backendMsgId) {
-                    const res = await apiFetch('/api/messages/' + encodeURIComponent(backendMsgId) + '/process-details?full=1');
-                    const j = await res.json().catch(function () { return {}; });
-                    if (res.ok && typeof renderProcessDetails === 'function') {
-                        renderProcessDetails(clientMsgId, (j && Array.isArray(j.processDetails)) ? j.processDetails : []);
-                    }
-                }
-            } catch (e) {
-                console.error('加载过程详情失败（工作流 HITL 恢复）:', e);
-            } finally {
-                detailsContainer.dataset.loading = '0';
-            }
-        }
-
-        expandProcessDetailsTimeline(clientMsgId);
-
-        for (let i = 0; i < runs.length; i++) {
-            const hitlData = workflowHitlDataFromRun(runs[i]);
-            if (!hitlData) continue;
-            let hitlItemEl = findWorkflowHitlTimelineItem(detailsContainer, hitlData.workflowRunId);
-            if (!hitlItemEl) {
-                const timeline = detailsContainer.querySelector('.progress-timeline');
-                if (timeline && typeof addTimelineItem === 'function') {
-                    const itemId = addTimelineItem(timeline, 'workflow_hitl_waiting', {
-                        title: '🧑‍⚖️ 工作流等待审批',
-                        message: hitlData.label || '',
-                        data: hitlData
-                    });
-                    hitlItemEl = document.getElementById(itemId);
-                }
-            }
-            if (hitlItemEl && hitlItemEl.id) {
-                renderInlineWorkflowHitlApproval(hitlItemEl.id, hitlData);
-            }
-        }
-    } catch (e) {
-        console.error('restoreWorkflowHitlInlineForConversation failed', e);
-    }
-}
-
-window.restoreWorkflowHitlInlineForConversation = restoreWorkflowHitlInlineForConversation;
-window.submitWorkflowHitlDecision = async function submitWorkflowHitlDecision(runId, approved, comment) {
-    const fetchFn = typeof apiFetch === 'function' ? apiFetch : fetch;
-    const response = await fetchFn('/api/workflows/runs/' + encodeURIComponent(String(runId)) + '/resume', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ approved: !!approved, comment: comment || '' })
-    });
-    const body = response && typeof response.json === 'function' ? await response.json() : null;
-    if (!response || !response.ok) {
-        throw new Error((body && body.error) ? body.error : '提交失败');
-    }
-    return body;
-};
 
 function hitlEscapeAttrSelector(val) {
     const s = String(val);
@@ -5376,119 +5107,7 @@ function hitlPendingItemToData(item, fallbackConversationId) {
     };
 }
 
-const hitlInlineRestoreInFlight = new Set();
-
-/**
- * 刷新或切换会话后：根据待审批记录恢复时间线里的内联审批入口，并展开详情区。
- */
-async function restoreHitlInlineForConversation(conversationId) {
-    if (!conversationId || typeof apiFetch !== 'function') return;
-    if (hitlInlineRestoreInFlight.has(conversationId)) return;
-    if (typeof window.currentConversationId === 'string' && window.currentConversationId !== conversationId) {
-        return;
-    }
-    hitlInlineRestoreInFlight.add(conversationId);
-    try {
-        const resp = await apiFetch('/api/hitl/pending?conversationId=' + encodeURIComponent(conversationId) + '&status=pending&pageSize=50');
-        if (!resp.ok) return;
-        const data = await resp.json().catch(function () { return {}; });
-        const rawItems = (Array.isArray(data.items) ? data.items : []).filter(function (item) {
-            return !isAgentReviewedHitl(item);
-        });
-        // 任务列表是当前进程的权威运行态。服务重启或任务取消后，即使审批查询
-        // 短暂读到旧 pending 记录，也不能重新挂载审批入口和倒计时。
-        const items = conversationExecutionTracker.ready && !conversationExecutionTracker.isRunning(conversationId)
-            ? []
-            : rawItems;
-        if (typeof window.currentConversationId === 'string' && window.currentConversationId !== conversationId) return;
-        clearChatHitlApprovalDock();
-        const normalizedItems = items.map(function (item) {
-            return hitlPendingItemToData(item, conversationId);
-        }).filter(Boolean);
-        hitlPendingInterruptTracker.replaceConversation(conversationId, normalizedItems);
-        syncHitlApprovalTaskAvailability();
-        if (items.length > 0) {
-            const newestPending = normalizedItems[0];
-            renderChatHitlApprovalDock(newestPending);
-            updateHitlApprovalSidebar(newestPending, true);
-        } else {
-            updateHitlApprovalSidebar({ conversationId: conversationId }, false);
-        }
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            let backendMsgId = item.messageId != null ? String(item.messageId).trim() : '';
-            let msgEl = null;
-            if (backendMsgId) {
-                msgEl = document.querySelector('#chat-messages [data-backend-message-id="' + hitlEscapeAttrSelector(backendMsgId) + '"]');
-            }
-            if (!msgEl) {
-                msgEl = findLastAssistantMessageElInChat();
-                if (msgEl && msgEl.dataset && msgEl.dataset.backendMessageId) {
-                    backendMsgId = String(msgEl.dataset.backendMessageId).trim();
-                }
-            }
-            if (!msgEl || !msgEl.id || !backendMsgId) continue;
-            const clientMsgId = msgEl.id;
-            const detailsContainer = document.getElementById('process-details-' + clientMsgId);
-            if (!detailsContainer) continue;
-            if (detailsContainer.dataset.lazyNotLoaded === '1' && detailsContainer.dataset.loaded !== '1') {
-                try {
-                    detailsContainer.dataset.loading = '1';
-                    if (typeof loadProcessDetailsPaginated === 'function') {
-                        await loadProcessDetailsPaginated(clientMsgId, backendMsgId);
-                    } else {
-                        const res = await apiFetch('/api/messages/' + encodeURIComponent(backendMsgId) + '/process-details?full=1');
-                        const j = await res.json().catch(function () { return {}; });
-                        if (!res.ok) throw new Error((j && j.error) ? j.error : String(res.status));
-                        const details = (j && Array.isArray(j.processDetails)) ? j.processDetails : [];
-                        if (typeof renderProcessDetails === 'function') {
-                            renderProcessDetails(clientMsgId, details);
-                        }
-                    }
-                } catch (e) {
-                    console.error('加载过程详情失败（HITL 恢复）:', e);
-                } finally {
-                    detailsContainer.dataset.loading = '0';
-                }
-            }
-            expandProcessDetailsTimeline(clientMsgId);
-            const hitlData = hitlPendingItemToData(item);
-            let hitlItemEl = null;
-            if (item.toolCallId) {
-                hitlItemEl = detailsContainer.querySelector('[data-tool-call-id="' + hitlEscapeAttrSelector(String(item.toolCallId)) + '"]');
-            }
-            if (!hitlItemEl && item.toolName) {
-                const want = String(item.toolName).trim().toLowerCase();
-                const shortWant = want.indexOf('::') >= 0 ? want.split('::').pop() : want;
-                const calls = detailsContainer.querySelectorAll('.timeline-item-tool_call');
-                for (let j = calls.length - 1; j >= 0; j--) {
-                    const tn = String(calls[j].dataset.toolName || '').trim().toLowerCase();
-                    const shortTn = tn.indexOf('::') >= 0 ? tn.split('::').pop() : tn;
-                    const match = want && (tn === want || tn.endsWith('::' + shortWant) || shortTn === shortWant);
-                    if (match) {
-                        hitlItemEl = calls[j];
-                        break;
-                    }
-                }
-            }
-            if (!hitlItemEl) {
-                hitlItemEl = detailsContainer.querySelector('[data-hitl-interrupt-id="' + hitlEscapeAttrSelector(String(item.id)) + '"]');
-            }
-            if (!hitlItemEl) continue;
-            renderInlineHitlApproval(hitlItemEl.id, hitlData);
-        }
-        if (typeof restoreWorkflowHitlInlineForConversation === 'function') {
-            await restoreWorkflowHitlInlineForConversation(conversationId);
-        }
-    } catch (e) {
-        console.error('restoreHitlInlineForConversation failed', e);
-    } finally {
-        hitlInlineRestoreInFlight.delete(conversationId);
-    }
-}
-
 window.expandProcessDetailsTimeline = expandProcessDetailsTimeline;
-window.restoreHitlInlineForConversation = restoreHitlInlineForConversation;
 
 /**
  * 无 SSE 时（例如刷新页面后）：从 DB 拉取最后一条助手消息的过程详情并重绘时间线，便于审批通过后仍能看到执行进展。
@@ -5681,10 +5300,6 @@ async function attachRunningTaskEventStream(conversationId) {
                     }
                 }
                 if (abortController.signal.aborted) return false;
-                // 历史重绘会重建时间线节点，需重新挂载 HITL 审批入口。
-                if (typeof window.restoreHitlInlineForConversation === 'function') {
-                    await window.restoreHitlInlineForConversation(conversationId);
-                }
             }
             expandProcessDetailsTimeline(asEl.id);
 
@@ -6947,10 +6562,7 @@ function loadActiveTasks(showErrors = false) {
     const bar = document.getElementById('active-tasks-bar');
     activeTasksLoadPromise = (async function () {
         try {
-            const [response, pendingResponse] = await Promise.all([
-                apiFetch('/api/agent-loop/tasks'),
-                apiFetch('/api/hitl/pending?page=1&pageSize=200').catch(function () { return null; })
-            ]);
+            const response = await apiFetch('/api/agent-loop/tasks');
             const result = await response.json().catch(() => ({}));
 
             if (!response.ok) {
@@ -6958,10 +6570,6 @@ function loadActiveTasks(showErrors = false) {
             }
 
             renderActiveTasks(result.tasks || []);
-            if (pendingResponse && pendingResponse.ok) {
-                const pendingResult = await pendingResponse.json().catch(function () { return {}; });
-                reconcilePendingHitlState(pendingResult.items || []);
-            }
         } catch (error) {
             // 服务停止、重启或登录失效时，旧进程任务不可能仍可审批。
             // 立即清空本地运行/审批缓存，防止倒计时和按钮继续保持可用。
@@ -7110,12 +6718,6 @@ function renderActiveTasks(tasks) {
     reconcileHitlApprovalStateWithActiveTasks(normalizedTasks);
     if (typeof window.updateChatPrimaryActionState === 'function') {
         window.updateChatPrimaryActionState();
-    }
-    if (typeof window.updateProjectFolderTaskStatuses === 'function') {
-        window.updateProjectFolderTaskStatuses(normalizedTasks);
-    }
-    if (typeof updateAttackChainAvailability === 'function') {
-        updateAttackChainAvailability();
     }
     syncVisibleConversationTaskReplay(normalizedTasks);
 

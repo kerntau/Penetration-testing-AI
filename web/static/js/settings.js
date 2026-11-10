@@ -679,20 +679,10 @@ function syncC2NavFromConfig(cfg) {
         }
     }
     window.__c2Enabled = on;
-    if (typeof syncDashboardAccessTabs === 'function') {
-        syncDashboardAccessTabs();
-    }
 }
 
 // 切换设置分类
 function switchSettingsSection(section) {
-    if (section === 'rbac') {
-        if (typeof switchPage === 'function') {
-            switchPage('platform-rbac');
-        }
-        return;
-    }
-
     // Unknown hash sections must not hide every settings panel.
     const requestedContent = document.getElementById(`settings-section-${section}`);
     if (!requestedContent) return;
@@ -722,26 +712,6 @@ function switchSettingsSection(section) {
         refreshTokenUsage();
     } else if (typeof stopTokenUsageRequests === 'function') {
         stopTokenUsageRequests();
-    }
-	if (section === 'robots' && typeof window.loadVulnerabilityAlertSubscription === 'function') {
-		window.loadVulnerabilityAlertSubscription();
-	}
-    if (section === 'terminal' && typeof initTerminal === 'function') {
-        setTimeout(initTerminal, 0);
-    }
-    if (section === 'audit' && typeof initAuditLogsSection === 'function') {
-        setTimeout(initAuditLogsSection, 0);
-    }
-    if (section === 'storage' && typeof initStorageSection === 'function') {
-        setTimeout(initStorageSection, 0);
-    }
-    if (section === 'update') {
-        if (typeof loadUpdateConsole === 'function') {
-            loadUpdateConsole();
-        }
-    } else if (typeof stopUpdatePolling === 'function') {
-        // 离开更新分区就停掉进度轮询；服务端的任务照跑，回来时 loadUpdateConsole 会接着读。
-        stopUpdatePolling();
     }
 }
 
@@ -4252,7 +4222,6 @@ async function changePassword() {
         const pwdMsg = typeof window.t === 'function' ? window.t('settings.security.passwordUpdated') : '密码已更新，请使用新密码重新登录。';
         alert(pwdMsg);
         resetPasswordForm();
-        handleUnauthorized({ message: pwdMsg, silent: false });
         closeSettings();
     } catch (error) {
         console.error('修改密码失败:', error);

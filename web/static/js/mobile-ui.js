@@ -26,8 +26,7 @@
         drawerOpen: false,
         sheetOpen: false,
         chatDrawerOpen: false,
-        booted: false,
-        hitlPending: 0
+        booted: false
     };
 
     function isMobile() {
@@ -59,16 +58,16 @@
     var TABS = [
         { id: 'dashboard', label: '仪表盘', labelKey: 'nav.dashboard', icon: 'dashboard' },
         { id: 'chat', label: '对话', labelKey: 'nav.chat', icon: 'chat' },
-        { id: 'hitl', label: '协同', labelKey: 'nav.hitl', icon: 'hitl', badge: 'hitl' },
-        { id: 'tasks', label: '任务', labelKey: 'nav.tasks', icon: 'tasks' }
+        { id: 'vulnerabilities', label: '漏洞', labelKey: 'nav.vulnerabilities', icon: 'doc' },
+        { id: 'settings', label: '设置', labelKey: 'nav.settings', icon: 'more' }
     ];
 
     /* 每个标签对应的"归属页"集合，用于点亮高亮 */
     var TAB_GROUP = {
         dashboard: ['dashboard'],
         chat: ['chat'],
-        hitl: ['hitl'],
-        tasks: ['tasks']
+        vulnerabilities: ['vulnerabilities'],
+        settings: ['settings']
     };
 
     /* ---------------------------------------------------------------------
@@ -901,51 +900,6 @@
     }
 
     /* ---------------------------------------------------------------------
-       12. 待审批角标（HITL）
-       --------------------------------------------------------------------- */
-    function setHitlBadge(count) {
-        state.hitlPending = count;
-        var badge = $('[data-badge-for="hitl"]');
-        if (!badge) return;
-        if (!count || count <= 0) {
-            badge.style.display = 'none';
-            badge.textContent = '';
-            return;
-        }
-        badge.textContent = count > 99 ? '99+' : String(count);
-        badge.style.display = 'inline-block';
-    }
-
-    function refreshHitlBadge() {
-        if (!isMobile() || !state.booted) return;
-        if ($('#login-overlay') && $('#login-overlay').style.display !== 'none') {
-            setHitlBadge(0);
-            return;
-        }
-        var pending = fetch('/api/hitl/pending?page=1&pageSize=1', { credentials: 'same-origin' })
-            .then(function (r) { return r.ok ? r.json() : null; })
-            .then(function (d) {
-                if (!d) return 0;
-                if (typeof d.total === 'number') return d.total;
-                if (Array.isArray(d.items)) return d.items.length;
-                return 0;
-            })
-            .catch(function () { return 0; });
-
-        var workflows = fetch('/api/workflows/runs/pending', { credentials: 'same-origin' })
-            .then(function (r) { return r.ok ? r.json() : null; })
-            .then(function (d) {
-                if (!d || !Array.isArray(d.runs)) return 0;
-                return d.runs.length;
-            })
-            .catch(function () { return 0; });
-
-        Promise.all([pending, workflows]).then(function (res) {
-            setHitlBadge((res[0] || 0) + (res[1] || 0));
-        });
-    }
-
-    /* ---------------------------------------------------------------------
        13. 登录态与底部栏可见性
        --------------------------------------------------------------------- */
     function syncAuthChrome() {
@@ -1200,13 +1154,6 @@
             enableEdgeSwipe();
             watchDom();
             watchSelectionPanels();
-
-            /* 待审批角标：首次 + 每 45s + 回到前台时刷新 */
-            refreshHitlBadge();
-            setInterval(refreshHitlBadge, 45000);
-            document.addEventListener('visibilitychange', function () {
-                if (!document.hidden) refreshHitlBadge();
-            });
         }
 
         wrapTables($('.page.active') || document);
@@ -1257,7 +1204,6 @@
         openSheet: openSheet,
         closeSheet: closeSheet,
         closeSelectionPanels: closeSelectionPanels,
-        refreshHitlBadge: refreshHitlBadge,
         wrapTables: wrapTables,
         toast: toast
     };

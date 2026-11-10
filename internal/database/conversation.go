@@ -46,47 +46,17 @@ type Message struct {
 
 // CreateConversation 创建新对话
 func (db *DB) CreateConversation(title string, meta ConversationCreateMeta) (*Conversation, error) {
-	return db.CreateConversationWithWebshell("", title, meta)
-}
-
-// CreateConversationWithWebshell 创建新对话，可选绑定 WebShell 连接 ID（为空则普通对话）
-func (db *DB) CreateConversationWithWebshell(webshellConnectionID, title string, meta ConversationCreateMeta) (*Conversation, error) {
 	id := uuid.New().String()
 	now := time.Now()
 
 	projectID := strings.TrimSpace(meta.ProjectID)
-	if projectID != "" {
-		if _, err := db.GetProject(projectID); err != nil {
-			return nil, err
-		}
-	}
 	roleName := normalizeConversationRoleName(meta.RoleName)
 	agentMode := normalizeConversationAgentMode(meta.AgentMode)
 
-	var err error
-	wsID := strings.TrimSpace(webshellConnectionID)
-	switch {
-	case wsID != "" && projectID != "":
-		_, err = db.Exec(
-			"INSERT INTO conversations (id, title, created_at, updated_at, webshell_connection_id, project_id, role_name, agent_mode) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-			id, title, now, now, wsID, projectID, roleName, agentMode,
-		)
-	case wsID != "":
-		_, err = db.Exec(
-			"INSERT INTO conversations (id, title, created_at, updated_at, webshell_connection_id, role_name, agent_mode) VALUES (?, ?, ?, ?, ?, ?, ?)",
-			id, title, now, now, wsID, roleName, agentMode,
-		)
-	case projectID != "":
-		_, err = db.Exec(
-			"INSERT INTO conversations (id, title, created_at, updated_at, project_id, role_name, agent_mode) VALUES (?, ?, ?, ?, ?, ?, ?)",
-			id, title, now, now, projectID, roleName, agentMode,
-		)
-	default:
-		_, err = db.Exec(
-			"INSERT INTO conversations (id, title, created_at, updated_at, role_name, agent_mode) VALUES (?, ?, ?, ?, ?, ?)",
-			id, title, now, now, roleName, agentMode,
-		)
-	}
+	_, err := db.Exec(
+		"INSERT INTO conversations (id, title, created_at, updated_at, project_id, role_name, agent_mode) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		id, title, now, now, projectID, roleName, agentMode,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("创建对话失败: %w", err)
 	}
@@ -100,126 +70,10 @@ func (db *DB) CreateConversationWithWebshell(webshellConnectionID, title string,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	if wsID != "" {
-		meta.WebShellConnectionID = wsID
-	}
 	notifyConversationCreated(conv, meta)
 	return conv, nil
 }
 
-// GetConversationByWebshellConnectionID 根据 WebShell 连接 ID 获取该连接下最近一条对话（用于 AI 助手持久化）
-func (db *DB) GetConversationByWebshellConnectionID(connectionID string) (*Conversation, error) {
-	if connectionID == "" {
-		return nil, fmt.Errorf("connectionID is empty")
-	}
-	var conv Conversation
-	var createdAt, updatedAt string
-	var pinned int
-	err := db.QueryRow(
-		"SELECT id, title, pinned, created_at, updated_at FROM conversations WHERE webshell_connection_id = ? ORDER BY updated_at DESC LIMIT 1",
-		connectionID,
-	).Scan(&conv.ID, &conv.Title, &pinned, &createdAt, &updatedAt)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("查询对话失败: %w", err)
-	}
-	conv.Pinned = pinned != 0
-	if t, e := time.Parse("2006-01-02 15:04:05.999999999-07:00", createdAt); e == nil {
-		conv.CreatedAt = t
-	} else if t, e := time.Parse("2006-01-02 15:04:05", createdAt); e == nil {
-		conv.CreatedAt = t
-	} else {
-		conv.CreatedAt, _ = time.Parse(time.RFC3339, createdAt)
-	}
-	if t, e := time.Parse("2006-01-02 15:04:05.999999999-07:00", updatedAt); e == nil {
-		conv.UpdatedAt = t
-	} else if t, e := time.Parse("2006-01-02 15:04:05", updatedAt); e == nil {
-		conv.UpdatedAt = t
-	} else {
-		conv.UpdatedAt, _ = time.Parse(time.RFC3339, updatedAt)
-	}
-	messages, err := db.GetMessages(conv.ID)
-	if err != nil {
-		return nil, fmt.Errorf("加载消息失败: %w", err)
-	}
-	conv.Messages = messages
-
-	// 加载过程详情并附加到对应消息（与 GetConversation 一致，便于刷新后仍可查看执行过程）
-	processDetailsMap, err := db.GetProcessDetailsByConversation(conv.ID)
-	if err != nil {
-		db.logger.Warn("加载过程详情失败", zap.Error(err))
-		processDetailsMap = make(map[string][]ProcessDetail)
-	}
-	for i := range conv.Messages {
-		if details, ok := processDetailsMap[conv.Messages[i].ID]; ok {
-			details = DedupeConsecutiveProcessDetails(details)
-			detailsJSON := make([]map[string]interface{}, len(details))
-			for j, detail := range details {
-				var data interface{}
-				if detail.Data != "" {
-					if err := json.Unmarshal([]byte(detail.Data), &data); err != nil {
-						db.logger.Warn("解析过程详情数据失败", zap.Error(err))
-					}
-				}
-				detailsJSON[j] = map[string]interface{}{
-					"id":             detail.ID,
-					"messageId":      detail.MessageID,
-					"conversationId": detail.ConversationID,
-					"eventType":      detail.EventType,
-					"message":        detail.Message,
-					"data":           data,
-					"createdAt":      detail.CreatedAt,
-				}
-			}
-			conv.Messages[i].ProcessDetails = detailsJSON
-		}
-	}
-
-	return &conv, nil
-}
-
-// WebShellConversationItem 用于侧边栏列表，不含消息
-type WebShellConversationItem struct {
-	ID        string    `json:"id"`
-	Title     string    `json:"title"`
-	UpdatedAt time.Time `json:"updatedAt"`
-}
-
-// ListConversationsByWebshellConnectionID 列出该 WebShell 连接下的所有对话（按更新时间倒序），供侧边栏展示
-func (db *DB) ListConversationsByWebshellConnectionID(connectionID string) ([]WebShellConversationItem, error) {
-	if connectionID == "" {
-		return nil, nil
-	}
-	rows, err := db.Query(
-		"SELECT id, title, updated_at FROM conversations WHERE webshell_connection_id = ? ORDER BY updated_at DESC",
-		connectionID,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("查询对话列表失败: %w", err)
-	}
-	defer rows.Close()
-	var list []WebShellConversationItem
-	for rows.Next() {
-		var item WebShellConversationItem
-		var updatedAt string
-		if err := rows.Scan(&item.ID, &item.Title, &updatedAt); err != nil {
-			continue
-		}
-		if t, e := time.Parse("2006-01-02 15:04:05.999999999-07:00", updatedAt); e == nil {
-			item.UpdatedAt = t
-		} else if t, e := time.Parse("2006-01-02 15:04:05", updatedAt); e == nil {
-			item.UpdatedAt = t
-		} else {
-			item.UpdatedAt, _ = time.Parse(time.RFC3339, updatedAt)
-		}
-		list = append(list, item)
-	}
-	return list, rows.Err()
-}
-
-// ConversationExists reports whether a conversation row exists (lightweight check for audit links).
 func (db *DB) ConversationExists(id string) (bool, error) {
 	id = strings.TrimSpace(id)
 	if id == "" {
@@ -450,28 +304,8 @@ func appendConversationProjectFilter(where string, args []interface{}, projectID
 	return where + fmt.Sprintf(" AND %s = ?", col), append(args, pid)
 }
 
+// appendConversationAccessFilter 对话访问过滤。当前为匿名单用户模式，不做按用户隔离，直接返回原查询。
 func appendConversationAccessFilter(where string, args []interface{}, userID, scope, alias string) (string, []interface{}) {
-	userID = strings.TrimSpace(userID)
-	if userID == "" || scope == RBACScopeAll {
-		return where, args
-	}
-	prefix := ""
-	if alias != "" {
-		prefix = alias + "."
-	}
-	where += fmt.Sprintf(` AND (%sowner_user_id = ? OR EXISTS (
-		SELECT 1 FROM rbac_resource_assignments ra
-		WHERE ra.user_id = ? AND ra.resource_type = 'conversation' AND ra.resource_id = %sid
-	) OR EXISTS (
-		SELECT 1 FROM projects p
-		WHERE p.id = %sproject_id AND (
-			p.owner_user_id = ? OR EXISTS (
-				SELECT 1 FROM rbac_resource_assignments pra
-				WHERE pra.user_id = ? AND pra.resource_type = 'project' AND pra.resource_id = p.id
-			)
-		)
-	))`, prefix, prefix, prefix)
-	args = append(args, userID, userID, userID, userID)
 	return where, args
 }
 
@@ -724,10 +558,7 @@ func (db *DB) UpdateConversationTime(id string) error {
 // 由于数据库外键约束设置了 ON DELETE CASCADE，删除对话时会自动删除：
 // - messages（消息）
 // - process_details（过程详情）
-// - attack_chain_nodes（攻击链节点）
-// - attack_chain_edges（攻击链边）
 // 漏洞记录会保留：vulnerabilities.conversation_id 使用 ON DELETE SET NULL，仅解除与会话的关联。
-// 注意：knowledge_retrieval_logs 在删除前会被显式清理。
 func (db *DB) DeleteConversation(id string) error {
 	// 删除对话前补全漏洞来源标签，便于在漏洞库中追溯已删除会话的发现。
 	_, err := db.Exec(`
@@ -738,15 +569,7 @@ func (db *DB) DeleteConversation(id string) error {
 	if err != nil {
 		db.logger.Warn("更新漏洞来源标签失败", zap.String("conversationId", id), zap.Error(err))
 	}
-
-	// 显式删除知识检索日志（虽然外键是SET NULL，但为了彻底清理，我们手动删除）
-	_, err = db.Exec("DELETE FROM knowledge_retrieval_logs WHERE conversation_id = ?", id)
-	if err != nil {
-		db.logger.Warn("删除知识检索日志失败", zap.String("conversationId", id), zap.Error(err))
-		// 不返回错误，继续删除对话
-	}
-
-	projectID, _ := db.GetConversationProjectID(id)
+	projectID := ""
 
 	// 删除对话（外键CASCADE会自动删除其他相关数据）
 	_, err = db.Exec("DELETE FROM conversations WHERE id = ?", id)
@@ -837,7 +660,6 @@ func (db *DB) removeConversationScopedDirs(conversationID, projectID string) {
 	// Eino ADK runner checkpoints (checkpoint_dir/<id>/).
 	db.removeConversationScopedDir(db.einoCheckpointBaseDir, conversationID, "eino_checkpoint")
 	// 上传附件始终归属单个会话，项目绑定的会话也要删，故放在 projectID 判断之外。
-	db.removeChatUploadDirs(conversationID)
 	// Eino reduction persisted tool outputs (tmp/reduction/conversations/<id>/).
 	// Project-bound sessions share projects/<id>/ — skip on single conversation delete.
 	if strings.TrimSpace(projectID) == "" {
@@ -846,42 +668,6 @@ func (db *DB) removeConversationScopedDirs(conversationID, projectID string) {
 		workspaceBase := filepath.Join(db.einoWorkspaceBaseDir(), "conversations")
 		db.removeConversationScopedDir(workspaceBase, conversationID, "workspace")
 	}
-}
-
-// removeChatUploadDirs 删除 chat_uploads/<日期>/<会话ID>/ 下属于该会话的上传目录。
-// 该根目录比其他产物多一层日期目录，无法复用 removeConversationScopedDir。
-func (db *DB) removeChatUploadDirs(conversationID string) {
-	base := strings.TrimSpace(db.chatUploadsDir)
-	if base == "" || strings.TrimSpace(conversationID) == "" {
-		return
-	}
-	seg := sanitizeConversationPathSegment(conversationID)
-	dates, err := os.ReadDir(base)
-	if err != nil {
-		return
-	}
-	for _, dateDir := range dates {
-		if !dateDir.IsDir() {
-			continue
-		}
-		dir := filepath.Join(base, dateDir.Name(), seg)
-		if rmErr := os.RemoveAll(dir); rmErr != nil && db.logger != nil {
-			db.logger.Warn("删除会话上传目录失败",
-				zap.String("conversationId", conversationID),
-				zap.String("kind", "chat_uploads"),
-				zap.String("dir", dir),
-				zap.Error(rmErr))
-		}
-	}
-}
-
-func (db *DB) removeProjectScopedDirs(projectID string) {
-	// Eino reduction persisted tool outputs (tmp/reduction/projects/<id>/).
-	reductionBase := filepath.Join(db.einoReductionBaseDir(), "projects")
-	db.removeConversationScopedDir(reductionBase, projectID, "reduction")
-	// Agent download/analysis workspace (tmp/workspace/projects/<id>/).
-	workspaceBase := filepath.Join(db.einoWorkspaceBaseDir(), "projects")
-	db.removeConversationScopedDir(workspaceBase, projectID, "workspace")
 }
 
 // SaveAgentTrace 保存最后一轮代理消息轨迹与助手输出摘要。

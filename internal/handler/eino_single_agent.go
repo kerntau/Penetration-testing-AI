@@ -93,7 +93,7 @@ func (h *AgentHandler) EinoSingleAgentLoopStream(c *gin.Context) {
 
 	releaseAdmission := h.lockAgentAdmission()
 	defer releaseAdmission()
-	prep, err := h.prepareMultiAgentSession(&req, c, "eino_agent_stream")
+	prep, err := h.prepareAgentSession(&req, "eino_agent_stream")
 	if err != nil {
 		sendEvent("error", err.Error(), nil)
 		sendEvent("done", "", nil)
@@ -108,19 +108,12 @@ func (h *AgentHandler) EinoSingleAgentLoopStream(c *gin.Context) {
 
 	conversationID := prep.ConversationID
 	assistantMessageID := prep.AssistantMessageID
-	h.activateHITLForConversation(conversationID, req.Hitl)
-	if h.hitlManager != nil {
-		defer h.hitlManager.DeactivateConversation(conversationID)
-	}
 
 	if prep.UserMessageID != "" {
 		sendEvent("message_saved", "", map[string]interface{}{
 			"conversationId": conversationID,
 			"userMessageId":  prep.UserMessageID,
 		})
-	}
-	if h.runRoleWorkflowStreamIfBound(c, &req, prep, sendEvent, releaseAdmission) {
-		return
 	}
 
 	var cancelWithCause context.CancelCauseFunc
@@ -243,9 +236,6 @@ func (h *AgentHandler) EinoSingleAgentLoopStream(c *gin.Context) {
 		taskCtxLoop = multiagent.WithAgentTurnLoopInterruptRegistrar(taskCtxLoop, func(push func(string) bool) func() {
 			return h.tasks.BindAgentTurnLoopInterrupt(conversationID, push)
 		})
-		taskCtxLoop = multiagent.WithHITLToolInterceptor(taskCtxLoop, func(ctx context.Context, toolName, arguments string) (string, error) {
-			return h.interceptHITLForEinoTool(ctx, cancelWithCause, conversationID, assistantMessageID, sendEvent, toolName, arguments)
-		})
 
 		result, runErr = multiagent.RunEinoSingleChatModelAgent(
 			taskCtxLoop,
@@ -255,13 +245,13 @@ func (h *AgentHandler) EinoSingleAgentLoopStream(c *gin.Context) {
 			h.db,
 			h.logger,
 			conversationID,
-			h.conversationProjectID(conversationID),
+			"",
 			curFinalMessage,
 			curHistory,
 			roleTools,
 			progressCallback,
 			chatReasoningToClientIntent(req.Reasoning),
-			h.agentSessionContextBlock(conversationID),
+			"",
 		)
 		_ = resolvedAIChannelID
 
@@ -442,17 +432,10 @@ func (h *AgentHandler) EinoSingleAgentLoop(c *gin.Context) {
 
 	releaseAdmission := h.lockAgentAdmission()
 	defer releaseAdmission()
-	prep, err := h.prepareMultiAgentSession(&req, c, "eino_agent")
+	prep, err := h.prepareAgentSession(&req, "eino_agent")
 	if err != nil {
-		status, msg := multiAgentHTTPErrorStatus(err)
+		status, msg := agentSessionHTTPErrorStatus(err)
 		c.JSON(status, gin.H{"error": msg})
-		return
-	}
-	h.activateHITLForConversation(prep.ConversationID, req.Hitl)
-	if h.hitlManager != nil {
-		defer h.hitlManager.DeactivateConversation(prep.ConversationID)
-	}
-	if h.runRoleWorkflowJSONIfBound(c, &req, prep, releaseAdmission) {
 		return
 	}
 

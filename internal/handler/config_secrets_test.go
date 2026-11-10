@@ -20,7 +20,6 @@ func TestConfigResponseMasksSecretsAndSavePreservesThem(t *testing.T) {
 			"first":  {Name: "first", APIKey: "test-only-first", BaseURL: "http://127.0.0.1"},
 			"second": {Name: "second", APIKey: "test-only-second", BaseURL: "http://127.0.0.1"},
 		}},
-		Robots: config.RobotsConfig{Wecom: config.RobotWecomConfig{Token: "test-only-token", Secret: "test-only-secret", EncodingAESKey: "test-only-aes"}},
 	}
 	h := &ConfigHandler{config: cfg, logger: zap.NewNop()}
 	r := gin.New()
@@ -43,7 +42,7 @@ func TestConfigResponseMasksSecretsAndSavePreservesThem(t *testing.T) {
 	if err := restoreConfigRequestSecrets(&req, cfg); err != nil {
 		t.Fatal(err)
 	}
-	if req.OpenAI.APIKey != cfg.OpenAI.APIKey || req.AI.Channels["second"].APIKey != cfg.AI.Channels["second"].APIKey || req.Robots.Wecom.Secret != cfg.Robots.Wecom.Secret {
+	if req.OpenAI.APIKey != cfg.OpenAI.APIKey || req.AI.Channels["second"].APIKey != cfg.AI.Channels["second"].APIKey {
 		t.Fatal("unchanged save lost secret")
 	}
 	req.OpenAI.APIKey = "test-only-replacement"

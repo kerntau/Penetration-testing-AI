@@ -111,12 +111,8 @@ func TestStartupRepairsTablesAndUnlistedColumnsPreservesData(t *testing.T) {
 	}
 	schemaExec(t, db, `ALTER TABLE conversations ADD COLUMN extension TEXT DEFAULT 'keep'; CREATE INDEX extension_index ON conversations(extension);
  CREATE TABLE unrelated(value TEXT); INSERT INTO unrelated VALUES ('untouched');
- DROP TABLE c2_payload_artifacts; DROP TABLE rbac_roles; DROP TABLE notification_reads_by_user;
- ALTER TABLE hitl_interrupts DROP COLUMN payload;
- ALTER TABLE hitl_conversation_configs DROP COLUMN reviewer;
  ALTER TABLE model_token_usage DROP COLUMN cached_tokens;
  ALTER TABLE model_token_usage DROP COLUMN cache_write_tokens;
- ALTER TABLE rbac_users DROP COLUMN display_name;
  ALTER TABLE messages DROP COLUMN reasoning_content;`)
 	db.Close()
 	for i := 0; i < 2; i++ {

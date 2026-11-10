@@ -1,6 +1,12 @@
 // 页面路由管理
 let currentPage = null;
 
+/** 允许直接通过 hash 进入的页面白名单。 */
+const ROUTABLE_PAGES = [
+    'dashboard', 'chat', 'tool-guard', 'mcp-monitor', 'mcp-management',
+    'vulnerabilities', 'roles-management', 'skills-monitor', 'skills-management', 'settings',
+];
+
 /** 对话、漏洞管理和设置页切换时保留查询串（会话 ID 或设置分区）。 */
 function buildHashForPage(pageId) {
     if (pageId !== 'chat' && pageId !== 'vulnerabilities' && pageId !== 'settings') {
@@ -52,17 +58,10 @@ function scheduleChatConversationFromHash(delayMs) {
     }
     const params = new URLSearchParams(hashParts.slice(1).join('?'));
     const conversationId = params.get('conversation');
-    const projectId = params.get('project');
-    if (projectId && typeof setActiveProjectId === 'function') {
-        setActiveProjectId(projectId);
-        if (typeof refreshChatProjectSelector === 'function') {
-            refreshChatProjectSelector();
-        }
-    }
     if (!conversationId) {
         return;
     }
-    // 同一事件循环内先遮住默认新对话状态，避免网络请求返回前闪出“无项目”。
+    // 同一事件循环内先遮住默认新对话状态，避免网络请求返回前闪出空对话。
     setChatConversationRestorePending(conversationId, true);
     const token = ++chatConversationFromHashSeq;
     setTimeout(() => {
@@ -102,29 +101,33 @@ function navigateToConversation(conversationId) {
 }
 window.navigateToConversation = navigateToConversation;
 
+/** 解析 hash 中的页面与设置分区。 */
+function resolveRoute(hash) {
+    const hashParts = String(hash || '').split('?');
+    let pageId = hashParts[0].replace(/^#?\//, '');
+    const query = new URLSearchParams(hashParts.slice(1).join('?'));
+    const settingsSection = pageId === 'settings' && query.get('section') === 'token-usage' ? 'token-usage' : '';
+    if (!ROUTABLE_PAGES.includes(pageId)) {
+        pageId = '';
+    }
+    return { pageId, settingsSection };
+}
+
 // 初始化路由
 function initRouter() {
     // 从URL hash读取页面（如果有）
-    const hash = window.location.hash.slice(1);
-    if (hash) {
-        const hashParts = hash.split('?');
-        let pageId = hashParts[0].replace(/^#?\//, '');
-        if (pageId === 'c2') pageId = 'c2-listeners';
-        // 一键更新已并进系统设置页的分区菜单：#system-update 这条老深链落到设置页的那一区。
-        const settingsSection = pageId === 'system-update' ? 'update' : pageId === 'settings' && new URLSearchParams(hashParts.slice(1).join('?')).get('section') === 'token-usage' ? 'token-usage' : '';
-        if (settingsSection) pageId = 'settings';
-        if (pageId && ['dashboard', 'chat', 'hitl', 'tool-guard', 'asset-overview', 'asset-library', 'info-collect', 'projects', 'vulnerabilities', 'webshell', 'chat-files', 'mcp-monitor', 'mcp-management', 'knowledge-management', 'knowledge-retrieval-logs', 'roles-management', 'platform-rbac', 'workflows', 'skills-monitor', 'skills-management', 'agents-management', 'settings', 'tasks', 'c2-listeners', 'c2-sessions', 'c2-tasks', 'c2-payloads', 'c2-events', 'c2-profiles'].includes(pageId)) {
-            switchPage(pageId);
-            if (settingsSection && typeof switchSettingsSection === 'function') {
-                switchSettingsSection(settingsSection);
-            }
-            if (pageId === 'chat') {
-                scheduleChatConversationFromHash(0);
-            }
-            return;
+    const { pageId, settingsSection } = resolveRoute(window.location.hash.slice(1));
+    if (pageId) {
+        switchPage(pageId);
+        if (settingsSection && typeof switchSettingsSection === 'function') {
+            switchSettingsSection(settingsSection);
         }
+        if (pageId === 'chat') {
+            scheduleChatConversationFromHash(0);
+        }
+        return;
     }
-    
+
     // 默认显示仪表盘
     switchPage('dashboard');
 }
@@ -150,26 +153,23 @@ function switchPage(pageId) {
         return;
     }
 
-    if (typeof window.syncC2NavOnceFromServer === 'function') {
-        void window.syncC2NavOnceFromServer();
-    }
     // 隐藏所有页面
     document.querySelectorAll('.page').forEach(page => {
         page.classList.remove('active');
     });
-    
+
     // 显示目标页面
     targetPage.classList.add('active');
     currentPage = pageId;
-        
+
     const newHash = buildHashForPage(pageId);
     if (window.location.hash.slice(1) !== newHash) {
         window.location.hash = newHash;
     }
-        
+
     // 更新导航状态
     updateNavState(pageId);
-        
+
     // 页面特定的初始化
     initPage(pageId);
 
@@ -186,25 +186,17 @@ function updateNavState(pageId) {
         item.classList.remove('active');
         item.classList.remove('expanded');
     });
-    
+
     document.querySelectorAll('.nav-submenu-item').forEach(item => {
         item.classList.remove('active');
     });
-    
+
     // 设置活动状态
-    if (pageId === 'hitl' || pageId === 'tool-guard') {
+    if (pageId === 'tool-guard') {
         const securityItem = document.querySelector('.nav-item[data-page="security"]');
         if (securityItem) {
             securityItem.classList.add('active');
             securityItem.classList.add('expanded');
-        }
-        const submenuItem = document.querySelector(`.nav-submenu-item[data-page="${pageId}"]`);
-        if (submenuItem) submenuItem.classList.add('active');
-    } else if (pageId === 'asset-overview' || pageId === 'asset-library' || pageId === 'info-collect') {
-        const assetItem = document.querySelector('.nav-item[data-page="assets"]');
-        if (assetItem) {
-            assetItem.classList.add('active');
-            assetItem.classList.add('expanded');
         }
         const submenuItem = document.querySelector(`.nav-submenu-item[data-page="${pageId}"]`);
         if (submenuItem) submenuItem.classList.add('active');
@@ -216,20 +208,7 @@ function updateNavState(pageId) {
             // 展开MCP子菜单
             mcpItem.classList.add('expanded');
         }
-        
-        const submenuItem = document.querySelector(`.nav-submenu-item[data-page="${pageId}"]`);
-        if (submenuItem) {
-            submenuItem.classList.add('active');
-        }
-    } else if (pageId === 'knowledge-management' || pageId === 'knowledge-retrieval-logs') {
-        // 知识子菜单项
-        const knowledgeItem = document.querySelector('.nav-item[data-page="knowledge"]');
-        if (knowledgeItem) {
-            knowledgeItem.classList.add('active');
-            // 展开知识子菜单
-            knowledgeItem.classList.add('expanded');
-        }
-        
+
         const submenuItem = document.querySelector(`.nav-submenu-item[data-page="${pageId}"]`);
         if (submenuItem) {
             submenuItem.classList.add('active');
@@ -242,28 +221,7 @@ function updateNavState(pageId) {
             // 展开Skills子菜单
             skillsItem.classList.add('expanded');
         }
-        
-        const submenuItem = document.querySelector(`.nav-submenu-item[data-page="${pageId}"]`);
-        if (submenuItem) {
-            submenuItem.classList.add('active');
-        }
-    } else if (pageId === 'agents-management') {
-        const agentsItem = document.querySelector('.nav-item[data-page="agents"]');
-        if (agentsItem) {
-            agentsItem.classList.add('active');
-            agentsItem.classList.add('expanded');
-        }
-        const submenuItem = document.querySelector(`.nav-submenu-item[data-page="${pageId}"]`);
-        if (submenuItem) {
-            submenuItem.classList.add('active');
-        }
-    } else if (pageId.startsWith('c2') || pageId === 'c2-listeners' || pageId === 'c2-sessions' || pageId === 'c2-tasks' || pageId === 'c2-payloads' || pageId === 'c2-events' || pageId === 'c2-profiles') {
-        // C2 子菜单项
-        const c2Item = document.querySelector('.nav-item[data-page="c2"]');
-        if (c2Item) {
-            c2Item.classList.add('active');
-            c2Item.classList.add('expanded');
-        }
+
         const submenuItem = document.querySelector(`.nav-submenu-item[data-page="${pageId}"]`);
         if (submenuItem) {
             submenuItem.classList.add('active');
@@ -276,7 +234,7 @@ function updateNavState(pageId) {
             // 展开角色子菜单
             rolesItem.classList.add('expanded');
         }
-        
+
         const submenuItem = document.querySelector(`.nav-submenu-item[data-page="${pageId}"]`);
         if (submenuItem) {
             submenuItem.classList.add('active');
@@ -302,9 +260,9 @@ function getNavSubmenuItems(navItem) {
 function toggleSubmenu(menuId) {
     const sidebar = document.getElementById('main-sidebar');
     const navItem = document.querySelector(`.nav-item[data-page="${menuId}"]`);
-    
+
     if (!navItem) return;
-    
+
     const collapsed = sidebar && sidebar.classList.contains('collapsed');
 
     // 检查侧边栏是否折叠
@@ -344,12 +302,12 @@ function showSubmenuPopup(navItem, menuId) {
 
     const navItemContent = navItem.querySelector('.nav-item-content');
     const submenu = navItem.querySelector('.nav-submenu');
-    
+
     if (!submenu) return;
-    
+
     // 获取菜单位置
     const rect = navItemContent.getBoundingClientRect();
-    
+
     // 创建弹出菜单
     const popup = document.createElement('div');
     popup.className = 'submenu-popup';
@@ -358,7 +316,7 @@ function showSubmenuPopup(navItem, menuId) {
     popup.style.left = (rect.right + 8) + 'px';
     popup.style.top = rect.top + 'px';
     popup.style.zIndex = '1000';
-    
+
     // 复制子菜单项到弹出菜单
     const submenuItems = submenu.querySelectorAll('.nav-submenu-item');
     submenuItems.forEach(item => {
@@ -366,32 +324,32 @@ function showSubmenuPopup(navItem, menuId) {
         const popupItem = document.createElement('div');
         popupItem.className = 'submenu-popup-item';
         popupItem.textContent = item.textContent.trim();
-        
+
         // 检查是否是当前激活的页面
         const pageId = item.getAttribute('data-page');
         if (pageId && document.querySelector(`.nav-submenu-item[data-page="${pageId}"].active`)) {
             popupItem.classList.add('active');
         }
-        
+
         popupItem.onclick = function(e) {
             e.stopPropagation();
             e.preventDefault();
-            
+
             // 获取页面ID并切换
             const pageId = item.getAttribute('data-page');
             if (pageId) {
                 switchPage(pageId);
             }
-            
+
             // 关闭弹出菜单
             popup.remove();
             document.removeEventListener('click', closePopup);
         };
         popup.appendChild(popupItem);
     });
-    
+
     document.body.appendChild(popup);
-    
+
     // 点击外部关闭弹出菜单
     const closePopup = function(e) {
         if (!popup.contains(e.target) && !navItem.contains(e.target)) {
@@ -399,7 +357,7 @@ function showSubmenuPopup(navItem, menuId) {
             document.removeEventListener('click', closePopup);
         }
     };
-    
+
     // 延迟添加事件监听，避免立即触发
     setTimeout(() => {
         document.addEventListener('click', closePopup);
@@ -422,40 +380,9 @@ async function initPage(pageId) {
         case 'chat':
             // 恢复对话列表折叠状态（从其他页返回时保持用户选择）
             initConversationSidebarState();
-            if (typeof prefetchProjectsForChat === 'function') {
-                prefetchProjectsForChat();
-            }
-            if (typeof refreshChatProjectSelector === 'function') {
-                refreshChatProjectSelector();
-            }
             break;
         case 'tool-guard':
             if (typeof loadToolGuardConfig === 'function') loadToolGuardConfig();
-            break;
-        case 'hitl':
-            if (typeof refreshHitlActivePanel === 'function') {
-                refreshHitlActivePanel();
-            } else if (typeof refreshHitlPending === 'function') {
-                refreshHitlPending();
-            }
-            break;
-        case 'info-collect':
-            // 信息收集页面
-            if (typeof initInfoCollectPage === 'function') {
-                initInfoCollectPage();
-            }
-            break;
-        case 'asset-overview':
-            if (typeof loadAssetOverview === 'function') loadAssetOverview();
-            break;
-        case 'asset-library':
-            if (typeof loadAssets === 'function') loadAssets();
-            break;
-        case 'tasks':
-            // 初始化任务管理页面
-            if (typeof initTasksPage === 'function') {
-                initTasksPage();
-            }
             break;
         case 'mcp-monitor':
             // 初始化监控面板
@@ -508,38 +435,16 @@ async function initPage(pageId) {
                 afterMcpConfigReady();
             }
             break;
-        case 'projects':
-            if (typeof initProjectsPage === 'function') {
-                initProjectsPage();
-            }
-            break;
         case 'vulnerabilities':
             // 初始化漏洞管理页面
             if (typeof initVulnerabilityPage === 'function') {
                 initVulnerabilityPage();
             }
             break;
-        case 'webshell':
-            // 初始化 WebShell 管理页面
-            if (typeof initWebshellPage === 'function') {
-                initWebshellPage();
-            }
-            break;
-        case 'chat-files':
-            if (typeof initChatFilesPage === 'function') {
-                initChatFilesPage();
-            }
-            break;
         case 'settings':
             // 初始化设置页面（不需要加载工具列表）
             if (typeof loadConfig === 'function') {
                 loadConfig(false);
-            }
-            // 回到设置页时若停在「一键更新」分区，重新读一遍安装状态并把进度轮询接上——
-            // 离开设置页时轮询已被停掉，不接的话画面上会留一份不再动的进度。
-            const updateSection = document.getElementById('settings-section-update');
-            if (updateSection && updateSection.classList.contains('active') && typeof loadUpdateConsole === 'function') {
-                loadUpdateConsole();
             }
             // Returning through the regular settings nav reloads a retained usage panel.
             // Deep links are loaded by switchSettingsSection after switchPage returns.
@@ -567,16 +472,6 @@ async function initPage(pageId) {
                 });
             }
             break;
-        case 'platform-rbac':
-            if (typeof initPlatformRbacPage === 'function') {
-                initPlatformRbacPage();
-            }
-            break;
-        case 'workflows':
-            if (typeof refreshWorkflows === 'function') {
-                refreshWorkflows();
-            }
-            break;
         case 'skills-monitor':
             // 初始化Skills状态监控页面
             if (typeof loadSkillsMonitor === 'function') {
@@ -601,33 +496,8 @@ async function initPage(pageId) {
                 loadSkills();
             }
             break;
-        case 'agents-management':
-            if (typeof loadMarkdownAgents === 'function') {
-                loadMarkdownAgents();
-            }
-            break;
-        case 'c2-listeners':
-        case 'c2-sessions':
-        case 'c2-tasks':
-        case 'c2-payloads':
-        case 'c2-events':
-        case 'c2-profiles':
-            window.currentPageId = pageId;
-            if (window.C2 && typeof window.C2.init === 'function') {
-                window.C2.init();
-            }
-            break;
     }
-    
-    // 清理其他页面的定时器
-    if (pageId !== 'tasks' && typeof cleanupTasksPage === 'function') {
-        cleanupTasksPage();
-    }
-    // 一键更新的进度轮询同理：它现在住在系统设置页里，离开设置页就没必要每 1.5 秒读一次任务了
-    // （同一页内切到别的分区由 settings.js 的 switchSettingsSection 负责停）。
-    if (pageId !== 'settings' && typeof stopUpdatePolling === 'function') {
-        stopUpdatePolling();
-    }
+
     if (pageId !== 'settings' && typeof stopTokenUsageRequests === 'function') {
         stopTokenUsageRequests();
     }
@@ -638,19 +508,11 @@ document.addEventListener('DOMContentLoaded', function() {
     initRouter();
     document.documentElement.classList.remove('initial-route-pending');
     initSidebarState();
-    
+
     // 监听hash变化
     window.addEventListener('hashchange', function() {
-        const hash = window.location.hash.slice(1);
-        // 处理带参数的hash（如 chat?conversation=xxx）
-        const hashParts = hash.split('?');
-        let pageId = hashParts[0].replace(/^#?\//, '');
-        
-        if (pageId === 'c2') pageId = 'c2-listeners';
-        // 与首屏解析同一套别名：#system-update 落到系统设置页的「一键更新」分区。
-        const settingsSection = pageId === 'system-update' ? 'update' : pageId === 'settings' && new URLSearchParams(hashParts.slice(1).join('?')).get('section') === 'token-usage' ? 'token-usage' : '';
-        if (settingsSection) pageId = 'settings';
-        if (pageId && ['dashboard', 'chat', 'hitl', 'tool-guard', 'asset-overview', 'asset-library', 'info-collect', 'projects', 'tasks', 'workflows', 'vulnerabilities', 'webshell', 'chat-files', 'mcp-monitor', 'mcp-management', 'knowledge-management', 'knowledge-retrieval-logs', 'roles-management', 'platform-rbac', 'skills-monitor', 'skills-management', 'agents-management', 'settings', 'c2-listeners', 'c2-sessions', 'c2-tasks', 'c2-payloads', 'c2-events', 'c2-profiles'].includes(pageId)) {
+        const { pageId, settingsSection } = resolveRoute(window.location.hash.slice(1));
+        if (pageId) {
             switchPage(pageId);
             if (settingsSection && typeof switchSettingsSection === 'function') {
                 switchSettingsSection(settingsSection);

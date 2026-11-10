@@ -23,21 +23,8 @@ var dashboardState = {
     lastUpdatedAt: 0,           // 上次成功刷新的时间戳（ms）
     dismissedAlertKey: null,    // 当前会话中被用户「×」掉的告警内容指纹（同样的 reasons 不再弹）
     lastResources: null,        // 上一轮关键资源快照，用于判断是否首次有数据 / 智能 CTA
-    recentFeedTab: 'vulns',     // 最近漏洞 / 近期事实 Tab
-    accessTab: 'c2',            // 接入概览 Tab：c2 | webshell
     severityStatusFilter: null,  // 严重程度分布当前状态筛选：'' | open | confirmed | fixed | false_positive | ignored
-    lastProjectSummary: null,   // 最近一次项目仪表盘摘要（供 Tab 切换时重绘）
 };
-
-function dashboardProjectScopedUrl(url) {
-    try {
-        var pid = typeof getActiveProjectId === 'function' ? (getActiveProjectId() || '') : '';
-        if (!pid) return url;
-        return url + (url.indexOf('?') === -1 ? '?' : '&') + 'project_id=' + encodeURIComponent(pid);
-    } catch (e) {
-        return url;
-    }
-}
 
 async function refreshDashboard() {
     const runningEl = document.getElementById('dashboard-running-tasks');
@@ -75,14 +62,9 @@ async function refreshDashboard() {
         hideEl('dashboard-kpi-vuln-critical-badge');
         hideEl('dashboard-alert-banner');
         setRecentVulnsLoading();
-        setRecentFactsLoading();
-        ['tools', 'skills', 'knowledge', 'roles', 'agents'].forEach(function (k) {
+        ['tools', 'skills', 'roles'].forEach(function (k) {
             setEl('dashboard-resource-' + k, '…');
         });
-        setEl('dashboard-webshell-connections', '…');
-        setEl('dashboard-c2-listeners-running', '…');
-        setEl('dashboard-c2-sessions-online', '…');
-        setEl('dashboard-c2-tasks-pending', '…');
         var chartPlaceholder = document.getElementById('dashboard-tools-pie-placeholder');
         if (chartPlaceholder) { chartPlaceholder.style.removeProperty('display'); chartPlaceholder.textContent = (typeof window.t === 'function' ? window.t('common.loading') : '加载中…'); }
         var barChartEl = document.getElementById('dashboard-tools-bar-chart');
@@ -123,23 +105,18 @@ async function refreshDashboard() {
             return fetchJson('/api/vulnerabilities?severity=' + sev + '&status=open&limit=1');
         };
         const [
-            tasksRes, vulnRes, batchRes, monitorRes, knowledgeRes, skillsRes,
-            recentVulnsRes, rolesRes, agentsRes,
+            tasksRes, vulnRes, monitorRes, skillsRes,
+            recentVulnsRes, rolesRes,
             openCriticalRes, openHighRes, openMediumRes, openLowRes, toolsConfigRes,
-            hitlPendingRes, notificationsRes, externalMcpStatsRes,
-            webshellRes,
-            c2ListenersRes, c2SessionsRes, c2TasksRes,
-            projectSummaryRes, severityFilteredStatsRes, tokenUsageRes
+            externalMcpStatsRes, severityFilteredStatsRes, tokenUsageRes
         ] = await Promise.all([
             fetchJson('/api/agent-loop/tasks'),
             fetchJson('/api/vulnerabilities/stats'),
-            fetchJson('/api/batch-tasks?limit=500&page=1'),
+            // 工具调用统计（MCP 监控）
             fetchJson('/api/monitor/stats?top=30'),
-            fetchJson('/api/knowledge/stats'),
             fetchJson('/api/skills/stats'),
             fetchJson('/api/vulnerabilities?limit=10&page=1'),
             fetchJson('/api/roles'),
-            fetchJson('/api/multi-agent/markdown-agents'),
             openVulnQuery('critical'),
             openVulnQuery('high'),
             // 中/低危的「待处理」计数：用于风险概览卡的加权风险分，使其反映"当前未处理风险"
@@ -148,21 +125,10 @@ async function refreshDashboard() {
             // 拉取 MCP 工具的「配置总数」用于「能力总览」（区别于 monitor/stats 的「有调用记录」）。
             // 仅取 total 字段，page_size=1 减少传输；total 已涵盖内部 + 外部 MCP + 直接注册的工具。
             fetchJson('/api/config/tools?page=1&page_size=1&include_external=false'),
-            // HITL 待审批：用于「需要立即处理」告警条 + 推荐操作
-            fetchJson('/api/hitl/pending'),
-            // 通知摘要：since=0 拿最新一批，limit 控制大小；用于「最近事件」内联展示
-            fetchJson('/api/notifications/summary?since=0&limit=20&lang=' + encodeURIComponent((window.__locale || 'zh-CN'))),
             // External MCP 健康度
             fetchJson('/api/external-mcp/stats'),
-            // WebShell 已建立的连接（pentest 落地后的 foothold，对运营场景非常关键）
-            fetchJson(dashboardProjectScopedUrl('/api/webshell/connections')),
-            // C2 仪表盘条：监听器 / 会话 / 待处理任务（任务接口含 pending_queued_count）
-            fetchJson(dashboardProjectScopedUrl('/api/c2/listeners')),
-            fetchJson(dashboardProjectScopedUrl('/api/c2/sessions?limit=500')),
-            fetchJson(dashboardProjectScopedUrl('/api/c2/tasks?page=1&page_size=1')),
-            fetchJson('/api/projects/dashboard-summary?fact_limit=10'),
             selectedSeverityStatus ? fetchJson('/api/vulnerabilities/stats?status=' + encodeURIComponent(selectedSeverityStatus)) : Promise.resolve(null),
-            fetchJson(dashboardProjectScopedUrl('/api/usage/tokens?days=7&limit=20'))
+            fetchJson('/api/usage/tokens?days=7&limit=20')
         ]);
 
         // 如果在 await 期间 controller 已被 abort，说明又有新刷新启动了，丢弃本次结果
@@ -172,13 +138,6 @@ async function refreshDashboard() {
         let agentRunningCount = null;
         if (tasksRes && Array.isArray(tasksRes.tasks)) {
             agentRunningCount = tasksRes.tasks.length;
-        }
-        let batchRunningCount = 0;
-        if (batchRes && Array.isArray(batchRes.queues)) {
-            batchRes.queues.forEach(q => {
-                const s = (q.status || '').toLowerCase();
-                if (s === 'running') batchRunningCount++;
-            });
         }
         const runningConversations = agentRunningCount !== null ? agentRunningCount : 0;
         if (runningEl) {
@@ -261,45 +220,6 @@ async function refreshDashboard() {
             setKpiSubText('dashboard-kpi-vuln-sub-text', '-');
         }
 
-        // 批量任务队列：按状态统计（优化版；running 与上方 batchRunningCount 一致）
-        if (batchRes && Array.isArray(batchRes.queues)) {
-            const queues = batchRes.queues;
-            let pending = 0, running = batchRunningCount, done = 0;
-            queues.forEach(q => {
-                const s = (q.status || '').toLowerCase();
-                if (s === 'pending' || s === 'paused') pending++;
-                else if (s === 'running') { /* already counted into batchRunningCount */ }
-                else if (s === 'completed' || s === 'cancelled') done++;
-            });
-            const total = pending + running + done;
-            setEl('dashboard-batch-pending', String(pending));
-            setEl('dashboard-batch-running', String(running));
-            setEl('dashboard-batch-done', String(done));
-            setEl('dashboard-batch-total', total > 0 ? (typeof window.t === 'function' ? window.t('dashboard.totalCount', { count: total }) : `共 ${total} 个`) : (typeof window.t === 'function' ? window.t('dashboard.noTasks') : '暂无任务'));
-            
-            // 更新进度条
-            if (total > 0) {
-                const pendingPct = (pending / total * 100).toFixed(1);
-                const runningPct = (running / total * 100).toFixed(1);
-                const donePct = (done / total * 100).toFixed(1);
-                updateProgressBar('dashboard-batch-progress-pending', pendingPct);
-                updateProgressBar('dashboard-batch-progress-running', runningPct);
-                updateProgressBar('dashboard-batch-progress-done', donePct);
-            } else {
-                updateProgressBar('dashboard-batch-progress-pending', '0');
-                updateProgressBar('dashboard-batch-progress-running', '0');
-                updateProgressBar('dashboard-batch-progress-done', '0');
-            }
-        } else {
-            setEl('dashboard-batch-pending', '-');
-            setEl('dashboard-batch-running', '-');
-            setEl('dashboard-batch-done', '-');
-            setEl('dashboard-batch-total', '-');
-            updateProgressBar('dashboard-batch-progress-pending', '0');
-            updateProgressBar('dashboard-batch-progress-running', '0');
-            updateProgressBar('dashboard-batch-progress-done', '0');
-        }
-
         // 工具调用：monitor/stats 为 { summary, topTools }
         let toolsCount = 0, toolsTotalCalls = 0, toolsSuccessRate = -1, toolsFailedCount = 0;
         if (monitorRes && monitorRes.summary) {
@@ -344,18 +264,6 @@ async function refreshDashboard() {
             setEl('dashboard-resource-tools', '-');
         }
 
-        // 知识：填充能力总览中的「知识」一行
-        if (knowledgeRes && typeof knowledgeRes === 'object') {
-            if (knowledgeRes.enabled === false) {
-                setEl('dashboard-resource-knowledge', dt('dashboard.notEnabled', null, '未启用'));
-            } else {
-                const items = knowledgeRes.total_items ?? 0;
-                setEl('dashboard-resource-knowledge', formatNumber(items));
-            }
-        } else {
-            setEl('dashboard-resource-knowledge', '-');
-        }
-
         // Skills：填充能力总览中的「Skills」一行
         if (skillsRes && typeof skillsRes === 'object') {
             const totalSkills = skillsRes.total_skills ?? 0;
@@ -372,61 +280,28 @@ async function refreshDashboard() {
         } else {
             setEl('dashboard-resource-roles', '-');
         }
-        if (agentsRes) {
-            // /api/multi-agent/markdown-agents 返回 { agents: [...] }
-            const agents = Array.isArray(agentsRes) ? agentsRes : (agentsRes.agents || []);
-            setEl('dashboard-resource-agents', formatNumber(Array.isArray(agents) ? agents.length : 0));
-        } else {
-            setEl('dashboard-resource-agents', '-');
-        }
         // 最近漏洞列表
         renderRecentVulns(recentVulnsRes);
-        dashboardState.lastProjectSummary = projectSummaryRes;
-        renderRecentFacts(projectSummaryRes);
 
-        // External MCP 健康度（同时拿到 down 数喂给 alert banner / 推荐操作）
+        // External MCP 健康度（同时拿到 down 数喂给 alert banner）
         var externalMcpDown = renderExternalMcpHealth(externalMcpStatsRes);
 
-        // HITL 待审批数量（喂给 alert banner / 推荐操作）
-        var hitlPending = getHitlPendingCount(hitlPendingRes);
-
-        // 「最近事件」内联展示（来自通知摘要，过滤掉已经被仪表盘其他位置覆盖的类型）
-        renderRecentEvents(notificationsRes);
-
-        // 接入概览（C2 + WebShell）
-        renderDashboardAccessOverview(c2ListenersRes, c2SessionsRes, c2TasksRes, webshellRes);
-
-        // 关键提醒条：把所有可能的告警源（漏洞/HITL/失败率/MCP健康）合并展示
+        // 关键提醒条：把所有可能的告警源（漏洞/失败率/MCP健康）合并展示
         renderDashboardAlertBanner({
             criticalCount: openCriticalCount,
-            hitlPending: hitlPending,
             failedTools: toolsFailedCount,
             successRate: toolsSuccessRate,
             externalMcpDown: externalMcpDown
         });
 
         // 智能 CTA：有数据时隐藏「开始你的安全之旅」
-        var batchTotalCount = (batchRes && Array.isArray(batchRes.queues)) ? batchRes.queues.length : 0;
         var toolsConfiguredCount = (toolsConfigRes && typeof toolsConfigRes.total === 'number')
             ? toolsConfigRes.total : 0;
         updateSmartCTA({
-            totalRunning: runningConversations + batchRunningCount,
+            totalRunning: runningConversations,
             totalVulns: (vulnRes && typeof vulnRes.total === 'number') ? vulnRes.total : 0,
             totalCalls: toolsTotalCalls,
-            toolsConfigured: toolsConfiguredCount,
-            batchTotal: batchTotalCount
-        });
-
-        // 「推荐操作」：基于全量当前状态智能生成
-        renderRecommendedActions({
-            openCriticalCount: openCriticalCount,
-            hitlPending: hitlPending,
-            externalMcpDown: externalMcpDown,
-            successRate: toolsSuccessRate,
-            failedTools: toolsFailedCount,
-            toolsConfigured: toolsConfiguredCount,
-            totalVulns: (vulnRes && typeof vulnRes.total === 'number') ? vulnRes.total : 0,
-            totalRunning: runningConversations + batchRunningCount
+            toolsConfigured: toolsConfiguredCount
         });
 
         // 更新「上次更新」时间
@@ -447,13 +322,10 @@ async function refreshDashboard() {
         setKpiSubText('dashboard-kpi-tools-sub-text', '-');
         setKpiSubText('dashboard-kpi-rate-sub-text', '-');
         setKpiSubText('dashboard-kpi-token-sub-text', '-');
-        ['tools', 'skills', 'knowledge', 'roles', 'agents'].forEach(function (k) {
+        ['tools', 'skills', 'roles'].forEach(function (k) {
             setEl('dashboard-resource-' + k, '-');
         });
-        var accessSecErr = document.getElementById('dashboard-section-access');
-        if (accessSecErr) accessSecErr.hidden = true;
         setRecentVulnsError();
-        setRecentFactsError();
         renderDashboardToolsBar(null);
         var ph = document.getElementById('dashboard-tools-pie-placeholder');
         if (ph) { ph.style.removeProperty('display'); ph.textContent = (typeof window.t === 'function' ? window.t('dashboard.noCallData') : '暂无调用数据'); }
@@ -465,181 +337,6 @@ async function refreshDashboard() {
         // 重复调用是幂等的（内部判断 timer 是否已存在）。
         startDashboardAutoRefresh();
     }
-}
-
-/** 接入概览：C2 / WebShell Tab 切换；C2 禁用时仅保留 WebShell Tab */
-function renderDashboardAccessOverview(listenersRes, sessionsRes, tasksRes, webshellRes) {
-    var section = document.getElementById('dashboard-section-access');
-    if (!section) return;
-
-    var c2ConfigOn = window.__c2Enabled !== false;
-    var webshellList = null;
-    if (Array.isArray(webshellRes)) webshellList = webshellRes;
-    else if (webshellRes && Array.isArray(webshellRes.connections)) webshellList = webshellRes.connections;
-    var wsApiOk = webshellRes !== null;
-    var c2ApiOk = listenersRes !== null || sessionsRes !== null || tasksRes !== null;
-    var showC2 = c2ConfigOn && c2ApiOk;
-    var showWs = wsApiOk;
-
-    section.dataset.c2Available = showC2 ? '1' : '0';
-    section.dataset.webshellAvailable = showWs ? '1' : '0';
-
-    if (!showC2 && !showWs) {
-        section.hidden = true;
-        return;
-    }
-
-    if (showC2) {
-        var running = '-';
-        if (listenersRes && Array.isArray(listenersRes.listeners)) {
-            running = String(listenersRes.listeners.filter(function (l) {
-                return (l && (l.status || '').toLowerCase() === 'running');
-            }).length);
-        } else if (listenersRes === null) {
-            running = '-';
-        } else {
-            running = '0';
-        }
-        var online = '-';
-        if (sessionsRes && Array.isArray(sessionsRes.sessions)) {
-            online = String(sessionsRes.sessions.filter(function (s) {
-                if (!s) return false;
-                var st = (s.status || '').toLowerCase();
-                return st === 'active' || st === 'sleeping';
-            }).length);
-        } else if (sessionsRes === null) {
-            online = '-';
-        } else {
-            online = '0';
-        }
-        var pending = '-';
-        if (tasksRes && typeof tasksRes.pending_queued_count === 'number') {
-            pending = String(tasksRes.pending_queued_count);
-        } else if (tasksRes === null) {
-            pending = '-';
-        } else {
-            pending = '0';
-        }
-        setEl('dashboard-c2-listeners-running', running);
-        setEl('dashboard-c2-sessions-online', online);
-        setEl('dashboard-c2-tasks-pending', pending);
-    }
-
-    if (showWs) {
-        var wsCount = webshellList ? webshellList.length : 0;
-        setEl('dashboard-webshell-connections', formatNumber(wsCount));
-        renderDashboardWebshellRecent(webshellList || []);
-    }
-
-    section.hidden = false;
-    syncDashboardAccessTabs();
-    if (typeof applyTranslations === 'function') {
-        try { applyTranslations(section); } catch (_e) { /* ignore */ }
-    }
-}
-
-/** C2 / WebShell Tab 切换（样式与「最近漏洞 / 近期事实」一致） */
-function switchDashboardAccessTab(tab) {
-    tab = tab === 'webshell' ? 'webshell' : 'c2';
-    dashboardState.accessTab = tab;
-    applyDashboardAccessTabUI(tab);
-}
-
-function applyDashboardAccessTabUI(tab) {
-    var tabC2 = document.getElementById('dashboard-access-tab-c2');
-    var tabWs = document.getElementById('dashboard-access-tab-webshell');
-    var panelC2 = document.getElementById('dashboard-access-panel-c2');
-    var panelWs = document.getElementById('dashboard-access-panel-webshell');
-    if (tabC2) {
-        tabC2.classList.toggle('is-active', tab === 'c2');
-        tabC2.setAttribute('aria-selected', tab === 'c2' ? 'true' : 'false');
-    }
-    if (tabWs) {
-        tabWs.classList.toggle('is-active', tab === 'webshell');
-        tabWs.setAttribute('aria-selected', tab === 'webshell' ? 'true' : 'false');
-    }
-    if (panelC2) panelC2.hidden = tab !== 'c2';
-    if (panelWs) panelWs.hidden = tab !== 'webshell';
-    updateDashboardAccessViewAll(tab);
-}
-
-function updateDashboardAccessViewAll(tab) {
-    var link = document.getElementById('dashboard-access-view-all');
-    if (!link) return;
-    if (tab === 'webshell') {
-        link.onclick = function () { try { switchPage('webshell'); } catch (_) {} };
-        link.setAttribute('data-i18n', 'dashboard.webshellGoManage');
-        link.textContent = dt('dashboard.webshellGoManage', null, '进入 WebShell →');
-    } else {
-        link.onclick = function () { try { switchPage('c2-listeners'); } catch (_) {} };
-        link.setAttribute('data-i18n', 'dashboard.c2GoManage');
-        link.textContent = dt('dashboard.c2GoManage', null, '进入 C2 →');
-    }
-}
-
-/** 根据可用模块同步 Tab 可见性与默认选中项 */
-function syncDashboardAccessTabs() {
-    var section = document.getElementById('dashboard-section-access');
-    if (!section || section.hidden) return;
-
-    var showC2 = section.dataset.c2Available === '1';
-    var showWs = section.dataset.webshellAvailable === '1';
-    var tabNav = document.getElementById('dashboard-access-tabs');
-    var tabC2 = document.getElementById('dashboard-access-tab-c2');
-    var tabWs = document.getElementById('dashboard-access-tab-webshell');
-
-    if (tabC2) tabC2.hidden = !showC2;
-    if (tabWs) tabWs.hidden = !showWs;
-    if (tabNav) tabNav.hidden = false;
-
-    var tab = dashboardState.accessTab;
-    if (tab === 'c2' && !showC2) tab = 'webshell';
-    if (tab === 'webshell' && !showWs) tab = 'c2';
-    if (!showC2 && showWs) tab = 'webshell';
-    if (showC2 && !showWs) tab = 'c2';
-    dashboardState.accessTab = tab;
-    applyDashboardAccessTabUI(tab);
-}
-
-/** WebShell 接入概览：最近 3 条连接摘要 */
-function renderDashboardWebshellRecent(list) {
-    var container = document.getElementById('dashboard-webshell-recent');
-    if (!container) return;
-    container.innerHTML = '';
-    if (!list || list.length === 0) {
-        container.hidden = true;
-        return;
-    }
-    var sorted = list.slice().sort(function (a, b) {
-        var ta = (a && a.createdAt) ? Date.parse(a.createdAt) : 0;
-        var tb = (b && b.createdAt) ? Date.parse(b.createdAt) : 0;
-        return tb - ta;
-    });
-    var recent = sorted.slice(0, 3);
-    recent.forEach(function (conn) {
-        if (!conn) return;
-        var item = document.createElement('div');
-        item.className = 'dashboard-webshell-recent-item';
-        item.setAttribute('role', 'button');
-        item.setAttribute('tabindex', '0');
-        var label = (conn.remark || '').trim() || (conn.url || '').trim() || (conn.id || '');
-        var typeTag = (conn.type || 'shell').toUpperCase();
-        item.innerHTML =
-            '<span class="dashboard-webshell-recent-type">' + esc(typeTag) + '</span>' +
-            '<span class="dashboard-webshell-recent-label" title="' + esc(label) + '">' + esc(label) + '</span>';
-        var openWs = function () {
-            try { switchPage('webshell'); } catch (_) {}
-        };
-        item.addEventListener('click', openWs);
-        item.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                openWs();
-            }
-        });
-        container.appendChild(item);
-    });
-    container.hidden = false;
 }
 
 function setEl(id, text) {
@@ -742,7 +439,7 @@ function formatTokenUsageCompact(num) {
 }
 
 // sessionStorage：告警条「×」忽略记录 + 最近一次**实际展示过**的 reason 片段（不含 level），
-// 用于在「问题从多变少」（如审完 HITL 后只剩严重漏洞）时，避免误用更早对「仅子集」的忽略。
+// 用于在「问题从多变少」时避免误用更早对「仅子集」的忽略。
 var DASH_SESSION_ALERT_DISMISSED = 'dashboard.dismissedAlert';
 var DASH_SESSION_ALERT_LAST_REASONS = 'dashboard.alertLastReasons';
 
@@ -786,13 +483,6 @@ function renderDashboardAlertBanner(stats) {
             '存在 ' + stats.criticalCount + ' 个待处理的严重漏洞，建议立即处置'));
         reasonKeys.push('crit:' + stats.criticalCount);
         level = 'danger';
-    }
-    if (stats.hitlPending > 0) {
-        // HITL 待审批是阻塞 Agent 流程的，独立成一条；不影响 level（除非已经是 info 升 warning）
-        reasons.push(dt('dashboard.alertHitlReason', { count: stats.hitlPending },
-            '有 ' + stats.hitlPending + ' 个待审批的人机协同请求，Agent 正在等待你的决策'));
-        reasonKeys.push('hitl:' + stats.hitlPending);
-        if (level === 'info') level = 'warning';
     }
     if (stats.successRate >= 0 && stats.successRate < 80 && stats.failedTools > 0) {
         reasons.push(dt('dashboard.alertFailedReason', { count: stats.failedTools },
@@ -861,13 +551,6 @@ function renderDashboardAlertBanner(stats) {
         btn.onclick = function () { try { switchPage('vulnerabilities'); } catch (e) {} };
         actsEl.appendChild(btn);
     }
-    if (stats.hitlPending > 0) {
-        const btn = document.createElement('button');
-        btn.className = 'dashboard-alert-btn dashboard-alert-btn-secondary';
-        btn.textContent = dt('dashboard.viewHitl', null, '前往审批');
-        btn.onclick = function () { try { switchPage('hitl'); } catch (e) {} };
-        actsEl.appendChild(btn);
-    }
     if (stats.successRate >= 0 && stats.successRate < 80) {
         const btn = document.createElement('button');
         btn.className = 'dashboard-alert-btn dashboard-alert-btn-secondary';
@@ -933,177 +616,6 @@ function renderExternalMcpHealth(stats) {
     return down;
 }
 
-// HITL 待审批数量：返回 pending 项数；同时可在能力总览或 KPI 副标里使用
-function getHitlPendingCount(res) {
-    if (!res) return 0;
-    if (Array.isArray(res.items)) return res.items.length;
-    if (typeof res.total === 'number') return res.total;
-    if (Array.isArray(res)) return res.length;
-    return 0;
-}
-
-// 「最近事件」内联展示：取通知摘要里最重要的前 N 条
-// 设计原则：
-//   - 不重复 alert banner / KPI 已表达的「新漏洞」通知（vulnerability_created 仍过滤）
-//   - HITL 待审批在推荐操作等处也会提示，但仍在此展示时间线，便于与任务完成等并列查看
-//   - 整个 section 在没有可显示内容时整个隐藏，避免空模块占地方
-function renderRecentEvents(notifRes) {
-    var section = document.getElementById('dashboard-section-events');
-    var listEl = document.getElementById('dashboard-events-list');
-    if (!section || !listEl) return;
-
-    var items = (notifRes && Array.isArray(notifRes.items)) ? notifRes.items : [];
-    // 过滤：去掉新漏洞类型（与「最近漏洞」等板块避免重复）；HITL 不再过滤
-    var coveredTypes = { 'vulnerability_created': true };
-    var filtered = items.filter(function (it) {
-        if (!it || !it.type) return false;
-        if (coveredTypes[it.type]) return false;
-        return true;
-    });
-
-    // 按 level 排序：p0 > p1 > p2，再按时间倒序
-    var levelOrder = { p0: 0, p1: 1, p2: 2 };
-    filtered.sort(function (a, b) {
-        var la = levelOrder[a.level] != null ? levelOrder[a.level] : 9;
-        var lb = levelOrder[b.level] != null ? levelOrder[b.level] : 9;
-        if (la !== lb) return la - lb;
-        var ta = a.ts || a.createdAt || a.created_at || 0;
-        var tb = b.ts || b.createdAt || b.created_at || 0;
-        return new Date(tb).getTime() - new Date(ta).getTime();
-    });
-
-    var top = filtered.slice(0, 3);
-    if (top.length === 0) {
-        section.hidden = true;
-        listEl.innerHTML = '';
-        return;
-    }
-    section.hidden = false;
-
-    listEl.innerHTML = top.map(function (it) {
-        var level = it.level || 'p2';
-        var title = esc(it.title || it.message || dt('dashboard.eventUntitled', null, '事件'));
-        var msg = esc(it.message || it.summary || it.desc || '');
-        var whenRaw = timeAgoStr(it.ts || it.createdAt || it.created_at);
-        var when = esc(whenRaw || '—');
-        return (
-            '<div class="dashboard-event-item lvl-' + esc(level) + '">' +
-            '<span class="dashboard-event-dot" aria-hidden="true"></span>' +
-            '<div class="dashboard-event-body">' +
-            '<div class="dashboard-event-title">' + title + '</div>' +
-            (msg && msg !== title ? '<div class="dashboard-event-msg">' + msg + '</div>' : '') +
-            '</div>' +
-            '<span class="dashboard-event-time">' + when + '</span>' +
-            '</div>'
-        );
-    }).join('');
-}
-
-// 推荐操作：基于当前数据状态智能生成「下一步该做什么」。
-// 设计原则：每条都必须可点击直达对应页面，按优先级（紧急 > 维护 > 配置）排序，
-// 同一时间只显示最重要的 3-5 条；没有可推荐时整个 section 隐藏。
-function renderRecommendedActions(state) {
-    var section = document.getElementById('dashboard-section-recommend');
-    var listEl = document.getElementById('dashboard-recommend-list');
-    if (!section || !listEl) return;
-
-    var actions = [];
-
-    // 紧急类：未处理严重漏洞
-    if (state.openCriticalCount > 0) {
-        actions.push({
-            level: 'urgent',
-            icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>',
-            title: dt('dashboard.recoFixCritical', { count: state.openCriticalCount },
-                '修复 ' + state.openCriticalCount + ' 个待处理严重漏洞'),
-            desc: dt('dashboard.recoFixCriticalDesc', null, '严重等级的漏洞应优先处置'),
-            page: 'vulnerabilities'
-        });
-    }
-    // 紧急类：HITL 待审批
-    if (state.hitlPending > 0) {
-        actions.push({
-            level: 'urgent',
-            icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
-            title: dt('dashboard.recoApproveHitl', { count: state.hitlPending },
-                '审批 ' + state.hitlPending + ' 个 HITL 请求'),
-            desc: dt('dashboard.recoApproveHitlDesc', null, 'Agent 正在等待你的决策才能继续'),
-            page: 'hitl'
-        });
-    }
-    // 维护类：External MCP 异常
-    if (state.externalMcpDown > 0) {
-        actions.push({
-            level: 'warning',
-            icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
-            title: dt('dashboard.recoRestartMcp', { count: state.externalMcpDown },
-                '检查 ' + state.externalMcpDown + ' 个未运行的 External MCP'),
-            desc: dt('dashboard.recoRestartMcpDesc', null, '相关工具在 MCP 服务恢复前不可用'),
-            page: 'mcp-management'
-        });
-    }
-    // 维护类：高失败率
-    if (state.successRate >= 0 && state.successRate < 80 && state.failedTools > 0) {
-        actions.push({
-            level: 'warning',
-            icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
-            title: dt('dashboard.recoCheckMonitor', { count: state.failedTools },
-                '排查 ' + state.failedTools + ' 次工具调用失败'),
-            desc: dt('dashboard.recoCheckMonitorDesc', null, '在 MCP 监控中查看失败的请求详情'),
-            page: 'mcp-monitor'
-        });
-    }
-    // 配置类：第一次运行场景
-    if (state.toolsConfigured === 0) {
-        actions.push({
-            level: 'setup',
-            icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
-            title: dt('dashboard.recoSetupMcp', null, '配置首个 MCP 工具'),
-            desc: dt('dashboard.recoSetupMcpDesc', null, '安装 MCP 服务后 Agent 才能调用具体能力'),
-            page: 'mcp-management'
-        });
-    }
-    if (state.totalVulns === 0 && state.totalRunning === 0 && state.toolsConfigured > 0) {
-        actions.push({
-            level: 'setup',
-            icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
-            title: dt('dashboard.recoStartScan', null, '在对话中发起扫描'),
-            desc: dt('dashboard.recoStartScanDesc', null, '在对话中描述目标，让 AI 协助执行'),
-            page: 'chat'
-        });
-    }
-
-    if (actions.length === 0) {
-        section.hidden = true;
-        listEl.innerHTML = '';
-        return;
-    }
-    section.hidden = false;
-    listEl.innerHTML = actions.slice(0, 5).map(function (a) {
-        return (
-            '<a class="dashboard-recommend-item lvl-' + a.level + '" data-page="' + esc(a.page) + '" role="button" tabindex="0">' +
-            '<span class="dashboard-recommend-icon" aria-hidden="true">' + a.icon + '</span>' +
-            '<div class="dashboard-recommend-body">' +
-            '<div class="dashboard-recommend-title">' + esc(a.title) + '</div>' +
-            '<div class="dashboard-recommend-desc">' + esc(a.desc) + '</div>' +
-            '</div>' +
-            '<span class="dashboard-recommend-arrow" aria-hidden="true">→</span>' +
-            '</a>'
-        );
-    }).join('');
-
-    // 委托点击/键盘到推荐项 → switchPage
-    Array.from(listEl.querySelectorAll('.dashboard-recommend-item')).forEach(function (el) {
-        var page = el.getAttribute('data-page');
-        el.onclick = function () { try { switchPage(page); } catch (_) {} };
-        el.onkeydown = function (e) {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
-        };
-    });
-}
-
-// 智能 CTA：用户已经有任何数据（任务运行 / 漏洞 / 工具调用 / 配置过 MCP）就把
-// 「开始你的安全之旅」的 CTA 隐藏，只在真正空白的全新环境保留它当引导
 function updateSmartCTA(state) {
     var cta = document.getElementById('dashboard-cta-block');
     if (!cta) return;
@@ -1289,203 +801,6 @@ function renderRecentVulns(res) {
 }
 
 // 最近漏洞 / 近期事实 Tab 切换（共用列表区域，查看全部链接随 Tab 变化）
-function switchDashboardFeedTab(tab) {
-    tab = tab === 'facts' ? 'facts' : 'vulns';
-    dashboardState.recentFeedTab = tab;
-
-    var tabVulns = document.getElementById('dashboard-feed-tab-vulns');
-    var tabFacts = document.getElementById('dashboard-feed-tab-facts');
-    var panelVulns = document.getElementById('dashboard-feed-panel-vulns');
-    var panelFacts = document.getElementById('dashboard-feed-panel-facts');
-    if (tabVulns) {
-        tabVulns.classList.toggle('is-active', tab === 'vulns');
-        tabVulns.setAttribute('aria-selected', tab === 'vulns' ? 'true' : 'false');
-    }
-    if (tabFacts) {
-        tabFacts.classList.toggle('is-active', tab === 'facts');
-        tabFacts.setAttribute('aria-selected', tab === 'facts' ? 'true' : 'false');
-    }
-    if (panelVulns) panelVulns.hidden = tab !== 'vulns';
-    if (panelFacts) panelFacts.hidden = tab !== 'facts';
-    updateDashboardFeedViewAll(tab);
-}
-
-function updateDashboardFeedViewAll(tab) {
-    var link = document.getElementById('dashboard-feed-view-all');
-    if (!link) return;
-    if (tab === 'facts') {
-        link.onclick = function () { try { switchPage('projects'); } catch (_) {} };
-    } else {
-        link.onclick = function () { try { switchPage('vulnerabilities'); } catch (_) {} };
-    }
-}
-
-function setRecentFactsLoading() {
-    var wrap = document.getElementById('dashboard-recent-facts');
-    var empty = document.getElementById('dashboard-recent-facts-empty');
-    if (!wrap) return;
-    clearRecentFactsList(wrap);
-    if (empty) {
-        empty.hidden = false;
-        empty.classList.remove('is-rich');
-        empty.textContent = dt('common.loading', null, '加载中…');
-    }
-}
-
-function clearRecentFactsList(wrap) {
-    if (!wrap) return;
-    Array.from(wrap.querySelectorAll('.dashboard-recent-fact-item, .dashboard-recent-facts-meta')).forEach(function (n) { n.remove(); });
-}
-
-function setRecentFactsError() {
-    var wrap = document.getElementById('dashboard-recent-facts');
-    var empty = document.getElementById('dashboard-recent-facts-empty');
-    if (!wrap) return;
-    clearRecentFactsList(wrap);
-    if (empty) {
-        empty.hidden = false;
-        empty.classList.remove('is-rich');
-        empty.textContent = dt('common.loadFailed', null, '加载失败');
-    }
-}
-
-function factConfidenceShortLabel(confidence) {
-    var c = String(confidence || '').toLowerCase();
-    if (c === 'confirmed') return dt('projects.confidenceConfirmed', null, '已确认');
-    if (c === 'tentative') return dt('projects.confidenceTentative', null, '待确认');
-    return c || '—';
-}
-
-function factCategoryShortLabel(category) {
-    var raw = String(category || '').trim();
-    return raw || 'note';
-}
-
-// 按 project_id（回退 project_name）稳定映射 8 种配色，同一项目跨刷新颜色一致
-function projectFactProjectTone(projectId, projectName) {
-    var key = String(projectId || projectName || '').trim();
-    if (!key) return 0;
-    var hash = 0;
-    for (var i = 0; i < key.length; i++) {
-        hash = ((hash << 5) - hash) + key.charCodeAt(i);
-        hash |= 0;
-    }
-    return Math.abs(hash) % 8;
-}
-
-function openProjectFactFromDashboard(projectId, factKey) {
-    if (!projectId) return;
-    if (typeof switchPage === 'function') {
-        switchPage('projects');
-    }
-    setTimeout(async function () {
-        if (typeof window.initProjectsPage === 'function') {
-            await window.initProjectsPage();
-        }
-        if (typeof window.selectProject === 'function') {
-            await window.selectProject(projectId);
-        }
-        if (typeof window.switchProjectTab === 'function') {
-            window.switchProjectTab('facts');
-        }
-        if (factKey && typeof window.viewProjectFactBody === 'function') {
-            window.viewProjectFactBody(factKey);
-        }
-    }, 350);
-}
-
-function renderRecentFacts(res) {
-    var wrap = document.getElementById('dashboard-recent-facts');
-    var empty = document.getElementById('dashboard-recent-facts-empty');
-    if (!wrap) return;
-
-    clearRecentFactsList(wrap);
-
-    var list = (res && Array.isArray(res.recent_facts)) ? res.recent_facts : [];
-    var totals = (res && res.totals) ? res.totals : {};
-    var activeProjects = totals.active_projects || 0;
-    var totalFacts = totals.total_facts || 0;
-
-    if (list.length === 0) {
-        if (empty) {
-            empty.hidden = false;
-            empty.classList.add('is-rich');
-            var desc = activeProjects > 0
-                ? dt('dashboard.noFactsDesc', null, '在绑定项目的对话中，Agent 会自动记录目标、漏洞、攻击链等事实')
-                : dt('projects.selectOrCreateHint', null, '项目用于跨对话共享「事实黑板」：目标、环境、认证等信息会在绑定项目的对话中自动注入。');
-            var ctaLabel = activeProjects > 0
-                ? dt('dashboard.goToChat', null, '前往对话')
-                : dt('dashboard.createFirstProjectBtn', null, '创建第一个项目');
-            var ctaAction = activeProjects > 0 ? 'chat' : 'project';
-            empty.innerHTML = (
-                '<div class="dashboard-empty-title">' + esc(dt('dashboard.noFactsYet', null, '暂无近期事实')) + '</div>' +
-                '<div class="dashboard-empty-desc">' + esc(desc) + '</div>' +
-                '<button type="button" class="dashboard-empty-action" data-action="' + esc(ctaAction) + '">' +
-                esc(ctaLabel) + ' →</button>'
-            );
-            var btn = empty.querySelector('[data-action]');
-            if (btn) {
-                btn.onclick = function () {
-                    var action = btn.getAttribute('data-action');
-                    if (action === 'project') {
-                        try { switchPage('projects'); } catch (_) {}
-                        setTimeout(function () {
-                            if (typeof window.showNewProjectModal === 'function') {
-                                window.showNewProjectModal();
-                            }
-                        }, 350);
-                    } else {
-                        try { switchPage('chat'); } catch (_) {}
-                    }
-                };
-            }
-        }
-        return;
-    }
-
-    if (empty) {
-        empty.hidden = true;
-        empty.classList.remove('is-rich');
-    }
-
-    list.slice(0, 10).forEach(function (f) {
-        if (!f) return;
-        var category = factCategoryShortLabel(f.category);
-        var confidence = String(f.confidence || 'tentative').toLowerCase();
-        var item = document.createElement('a');
-        item.className = 'dashboard-recent-fact-item';
-        item.setAttribute('role', 'button');
-        item.tabIndex = 0;
-        var pid = f.project_id || '';
-        var fkey = f.fact_key || '';
-        item.onclick = function () { openProjectFactFromDashboard(pid, fkey); };
-        item.onkeydown = function (e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                item.click();
-            }
-        };
-
-        // 置顶列始终占位，避免有/无图钉时后续列错位
-        var pinMark = '<span class="dashboard-recent-fact-pin' + (f.pinned ? ' is-pinned' : '') + '"' +
-            (f.pinned ? (' title="' + esc(dt('projects.pinned', null, '置顶')) + '"') : '') +
-            ' aria-hidden="true">' + (f.pinned ? '📌' : '') + '</span>';
-        var projectLabel = (f.project_name || '').trim() || dt('projects.defaultProjectName', null, '项目');
-        var factKeyLabel = (f.fact_key || '').trim() || '—';
-        var projectTone = projectFactProjectTone(pid, projectLabel);
-        var projectCol = '<span class="dashboard-recent-fact-project proj-tone-' + projectTone + '" title="' + esc(projectLabel) + '">' + esc(projectLabel) + '</span>';
-        var categoryBadge = '<span class="dashboard-recent-fact-cat cat-' + esc(category.toLowerCase().replace(/[^a-z0-9_-]/g, '')) + '">' + esc(category) + '</span>';
-        var confBadge = '<span class="dashboard-recent-fact-conf conf-' + esc(confidence) + '">' + esc(factConfidenceShortLabel(confidence)) + '</span>';
-        var summary = '<span class="dashboard-recent-fact-summary" title="' + esc(f.summary || '') + '">' + esc(f.summary || dt('common.untitled', null, '无标题')) + '</span>';
-        var factKeyCol = '<span class="dashboard-recent-fact-key" title="' + esc(factKeyLabel) + '">' + esc(factKeyLabel) + '</span>';
-        var time = '<span class="dashboard-recent-fact-time">' + esc(timeAgoStr(f.updated_at)) + '</span>';
-
-        item.innerHTML = pinMark + categoryBadge + confBadge + summary + factKeyCol + projectCol + time;
-        wrap.appendChild(item);
-    });
-}
-
-// 漏洞状态映射：把 status 字符串规整到 4 类（避免脏数据）
 function statusKey(s) {
     s = String(s || '').toLowerCase();
     if (s === 'fixed' || s === 'closed' || s === 'resolved') return 'fixed';

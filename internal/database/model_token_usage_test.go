@@ -88,35 +88,3 @@ func newModelTokenUsageTestDB(t *testing.T) *DB {
 	return db
 }
 
-func TestModelTokenUsageStatsRespectConversationAccess(t *testing.T) {
-	db := newModelTokenUsageTestDB(t)
-	var ownID string
-	for _, owner := range []string{"alice", "bob"} {
-		conv, err := db.CreateConversation(owner, ConversationCreateMeta{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if owner == "alice" {
-			ownID = conv.ID
-		}
-		if _, err := db.Exec(`UPDATE conversations SET owner_user_id = ? WHERE id = ?`, owner, conv.ID); err != nil {
-			t.Fatal(err)
-		}
-		msg, err := db.AddMessage(conv.ID, "assistant", "done", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if err := db.AddProcessDetail(msg.ID, conv.ID, modelTokenUsageEventType, "usage", map[string]interface{}{
-			"model": owner, "modelCalls": 1, "promptTokens": 100, "completionTokens": 20, "cacheWriteTokens": 30,
-		}); err != nil {
-			t.Fatal(err)
-		}
-	}
-	stats, err := db.GetModelTokenUsageStats(ModelTokenUsageFilter{Access: RBACListAccess{UserID: "alice", Scope: "own"}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if stats.Summary.Events != 1 || stats.Summary.TotalTokens != 120 || stats.Summary.CacheWriteTokens != 30 || len(stats.Recent) != 1 || stats.Recent[0].ConversationID != ownID || len(stats.ByModel) != 1 || stats.ByModel[0].Key != "alice" {
-		t.Fatalf("usage leaks across users: %#v", stats)
-	}
-}

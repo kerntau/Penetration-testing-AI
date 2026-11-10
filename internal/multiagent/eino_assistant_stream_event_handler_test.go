@@ -52,47 +52,6 @@ func TestEinoAssistantStreamEventHandlerHandlesMainAssistantStream(t *testing.T)
 	}
 }
 
-func TestEinoAssistantStreamEventHandlerHandlesSubAgentStream(t *testing.T) {
-	var events []string
-	runMessages := newEinoRunMessageAccumulator(nil)
-	assistantOutput := newEinoAssistantOutputAccumulator("deep")
-	handler := newEinoAssistantStreamEventHandler(einoAssistantStreamEventHandlerConfig{
-		ConversationID:       "conv-1",
-		OrchMode:             "deep",
-		RunMessages:          runMessages,
-		AssistantOutput:      assistantOutput,
-		StreamsMainAssistant: func(agent string) bool { return agent == "lead" },
-		EinoRoleTag:          func(string) string { return "sub" },
-		NextSubAgentReplyStreamID: func() string {
-			return "sub-stream-1"
-		},
-		Progress: func(eventType, _ string, _ interface{}) {
-			events = append(events, eventType)
-		},
-	})
-	mv := &adk.MessageVariant{
-		IsStreaming:   true,
-		Role:          schema.Assistant,
-		MessageStream: schema.StreamReaderFromArray([]*schema.Message{{Role: schema.Assistant, Content: "sub reply"}}),
-	}
-
-	handled, err := handler.Handle(mv, "worker")
-	if !handled || err != nil {
-		t.Fatalf("handled=%v err=%v", handled, err)
-	}
-	if len(runMessages.Messages()) != 0 {
-		t.Fatalf("sub stream should not append main run text, got %#v", runMessages.Messages())
-	}
-	if assistantOutput.LastAssistant() != "" {
-		t.Fatalf("sub stream should not record main assistant, got %q", assistantOutput.LastAssistant())
-	}
-	if !containsString(events, "eino_agent_reply_stream_start") ||
-		!containsString(events, "eino_agent_reply_stream_delta") ||
-		!containsString(events, "eino_agent_reply_stream_end") {
-		t.Fatalf("events = %#v, want sub reply stream events", events)
-	}
-}
-
 func TestEinoAssistantStreamEventHandlerCompletesToolFragments(t *testing.T) {
 	idx := 0
 	var events []string

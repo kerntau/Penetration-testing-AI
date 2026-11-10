@@ -8,11 +8,8 @@ import (
 	"net/http"
 )
 
-func (h *AgentHandler) runSingleJSON(taskCtx, baseCtx context.Context, cancelWithCause context.CancelCauseFunc, req *ChatRequest, prep *multiAgentPrepared, status *string, respond func(int, interface{})) {
+func (h *AgentHandler) runSingleJSON(taskCtx, baseCtx context.Context, cancelWithCause context.CancelCauseFunc, req *ChatRequest, prep *agentSessionPrepared, status *string, respond func(int, interface{})) {
 	progressCallback := h.createProgressCallback(taskCtx, cancelWithCause, prep.ConversationID, prep.AssistantMessageID, nil)
-	taskCtx = multiagent.WithHITLToolInterceptor(taskCtx, func(ctx context.Context, toolName, arguments string) (string, error) {
-		return h.interceptHITLForEinoTool(ctx, cancelWithCause, prep.ConversationID, prep.AssistantMessageID, nil, toolName, arguments)
-	})
 
 	if h.config == nil {
 		respond(http.StatusInternalServerError, gin.H{"error": "服务器配置未加载"})
@@ -41,13 +38,13 @@ func (h *AgentHandler) runSingleJSON(taskCtx, baseCtx context.Context, cancelWit
 			h.db,
 			h.logger,
 			prep.ConversationID,
-			h.conversationProjectID(prep.ConversationID),
+			"",
 			curMsg,
 			curHist,
 			prep.RoleTools,
 			progressCallback,
 			chatReasoningToClientIntent(req.Reasoning),
-			h.agentSessionContextBlock(prep.ConversationID),
+			"",
 		)
 		if runErr != nil {
 			if shouldPersistEinoAgentTraceAfterRunError(baseCtx) {

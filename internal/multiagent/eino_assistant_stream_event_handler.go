@@ -109,12 +109,6 @@ func (h *einoAssistantStreamEventHandler) Handle(mv *adk.MessageVariant, agentNa
 	)
 	var toolStreamFragments []schema.ToolCall
 	var streamUsage *schema.TokenUsage
-	subReplyEmitter := newEinoSubAgentReplyEmitter(
-		h.conversationID,
-		agentName,
-		h.progress,
-		h.nextSubAgentReplyStreamID,
-	)
 	mainAssistantStream := newEinoMainAssistantStreamHandler(einoMainAssistantStreamHandlerConfig{
 		AgentName:        agentName,
 		Emitter:          mainEmitter,
@@ -125,11 +119,7 @@ func (h *einoAssistantStreamEventHandler) Handle(mv *adk.MessageVariant, agentNa
 	recvErr = recvEinoSchemaMessageStreamWithContext(h.ctx, mv.MessageStream, 8, func(chunk *schema.Message) {
 		reasoningEmitter.EmitDelta(chunk.ReasoningContent)
 		if chunk.Content != "" {
-			if h.streamsMainAssistant(agentName) {
-				mainAssistantStream.EmitDelta(chunk.Content)
-			} else if !h.streamsMainAssistant(agentName) {
-				subReplyEmitter.EmitDelta(chunk.Content)
-			}
+			mainAssistantStream.EmitDelta(chunk.Content)
 		}
 		if len(chunk.ToolCalls) > 0 {
 			toolStreamFragments = append(toolStreamFragments, chunk.ToolCalls...)
@@ -145,10 +135,7 @@ func (h *einoAssistantStreamEventHandler) Handle(mv *adk.MessageVariant, agentNa
 			zap.Int("toolFragments", len(toolStreamFragments)))
 	}
 	reasoningEmitter.Finish()
-	if h.streamsMainAssistant(agentName) {
-		mainAssistantStream.Finish()
-	}
-	subReplyEmitter.Finish()
+	mainAssistantStream.Finish()
 	if h.toolCallCompletion != nil {
 		h.toolCallCompletion.Complete(toolStreamFragments, agentName)
 	}

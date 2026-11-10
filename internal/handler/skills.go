@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
-	"cyberstrike-ai/internal/audit"
 	"cyberstrike-ai/internal/config"
 	"cyberstrike-ai/internal/database"
 	"cyberstrike-ai/internal/skillpackage"
@@ -24,12 +24,6 @@ type SkillsHandler struct {
 	configPath string
 	logger     *zap.Logger
 	db         *database.DB // 数据库连接（遗留统计；MCP list/read 已移除）
-	audit      *audit.Service
-}
-
-// SetAudit wires platform audit logging.
-func (h *SkillsHandler) SetAudit(s *audit.Service) {
-	h.audit = s
 }
 
 // NewSkillsHandler 创建新的Skills处理器
@@ -123,7 +117,7 @@ func (h *SkillsHandler) GetSkills(c *gin.Context) {
 	limit := 20 // 默认每页20条
 	offset := 0
 	if limitStr := c.Query("limit"); limitStr != "" {
-		if parsed, err := parseInt(limitStr); err == nil && parsed > 0 {
+		if parsed, err := strconv.Atoi(limitStr); err == nil && parsed > 0 {
 			// 允许更大的limit用于搜索场景，但设置一个合理的上限（10000）
 			if parsed <= 10000 {
 				limit = parsed
@@ -133,7 +127,7 @@ func (h *SkillsHandler) GetSkills(c *gin.Context) {
 		}
 	}
 	if offsetStr := c.Query("offset"); offsetStr != "" {
-		if parsed, err := parseInt(offsetStr); err == nil && parsed >= 0 {
+		if parsed, err := strconv.Atoi(offsetStr); err == nil && parsed >= 0 {
 			offset = parsed
 		}
 	}
@@ -372,9 +366,6 @@ func (h *SkillsHandler) CreateSkill(c *gin.Context) {
 	}
 
 	h.logger.Info("创建skill成功", zap.String("skill", req.Name))
-	if h.audit != nil {
-		h.audit.RecordOK(c, "skill", "create", "创建 Skill", "skill", req.Name, nil)
-	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "skill已创建",
 		"skill": map[string]interface{}{
@@ -435,9 +426,6 @@ func (h *SkillsHandler) UpdateSkill(c *gin.Context) {
 	}
 
 	h.logger.Info("更新skill成功", zap.String("skill", skillName))
-	if h.audit != nil {
-		h.audit.RecordOK(c, "skill", "update", "更新 Skill", "skill", skillName, nil)
-	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "skill已更新",
 	})
@@ -472,11 +460,6 @@ func (h *SkillsHandler) DeleteSkill(c *gin.Context) {
 	}
 
 	h.logger.Info("删除skill成功", zap.String("skill", skillName))
-	if h.audit != nil {
-		h.audit.RecordOK(c, "skill", "delete", "删除 Skill", "skill", skillName, map[string]interface{}{
-			"affected_roles": affectedRoles,
-		})
-	}
 	c.JSON(http.StatusOK, gin.H{
 		"message":        responseMsg,
 		"affected_roles": affectedRoles,

@@ -495,28 +495,8 @@ func (db *DB) LoadToolExecutionListPageForAccess(offset, limit int, status, tool
 	return executions, nil
 }
 
+// appendToolExecutionAccessSQL 工具执行访问过滤。匿名单用户模式下不做按用户隔离，直接返回原查询。
 func appendToolExecutionAccessSQL(query string, args []interface{}, access RBACListAccess, hasWhere bool) (string, []interface{}) {
-	if access.Scope == RBACScopeAll {
-		return query, args
-	}
-	userID := strings.TrimSpace(access.UserID)
-	joiner := " WHERE "
-	if hasWhere {
-		joiner = " AND "
-	}
-	if userID == "" {
-		return query + joiner + "1=0", args
-	}
-	query += joiner + `(
-		owner_user_id = ?
-		OR (conversation_id IS NOT NULL AND conversation_id <> '' AND (
-			EXISTS (SELECT 1 FROM conversations c WHERE c.id = tool_executions.conversation_id AND c.owner_user_id = ?)
-			OR EXISTS (SELECT 1 FROM rbac_resource_assignments ra WHERE ra.user_id = ? AND ra.resource_type = 'conversation' AND ra.resource_id = tool_executions.conversation_id)
-			OR EXISTS (SELECT 1 FROM conversations c JOIN projects p ON p.id = c.project_id WHERE c.id = tool_executions.conversation_id AND p.owner_user_id = ?)
-			OR EXISTS (SELECT 1 FROM conversations c JOIN rbac_resource_assignments pra ON pra.resource_id = c.project_id WHERE c.id = tool_executions.conversation_id AND pra.user_id = ? AND pra.resource_type = 'project')
-		))
-	)`
-	args = append(args, userID, userID, userID, userID, userID)
 	return query, args
 }
 

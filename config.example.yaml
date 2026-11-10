@@ -31,9 +31,6 @@ server:
   # 方式 B（仅本地/测试）：无证书文件时内存自签（浏览器会提示不受信任；SAN 含 localhost / 127.0.0.1）
   tls_auto_self_sign: true
 # 认证配置
-auth:
-  session_duration_hours: 12 # 登录有效期（小时），超时后需重新登录
-# 日志配置
 log:
   level: info # 日志级别: debug(调试), info(信息), warn(警告), error(错误)
   output: stdout # 日志输出位置: stdout(标准输出), stderr(标准错误), 或文件路径
@@ -41,62 +38,12 @@ log:
   diagnostic_retention_days: 14 # 保留天数（含当天）；省略或 <= 0 使用 14 天
   diagnostic_disabled: false # true 关闭额外诊断日志；修改后需重启
 # 平台操作审计（系统设置 -> 日志审计；不记录对话正文与每次工具调用）
-audit:
-  enabled: true
-  retention_days: 15 # 0 表示不自动清理
-  max_detail_bytes: 8192
-  auth_failure_cooldown_seconds: 60 # 同一 IP 登录/改密失败审计最短间隔（秒）；未配置时默认 60；-1 关闭节流
-# MCP 状态监控执行记录保留（tool_executions 表）
 monitor:
   retention_days: 90 # 省略时默认 90；0 表示不自动清理
 # 运行空间垃圾清理（系统设置 -> 存储清理）
 # 覆盖 Agent 工作区、工具输出缓存、C2 产物、对话上传件等磁盘产物的保留策略。
 # auto_clean 默认关闭：升级后不会在管理员不知情的情况下删除既有数据；
 # 关闭时仍可在「存储清理」页手动预览并执行清理。
-storage:
-  auto_clean: false # true 开启后台定时清理
-  interval_minutes: 60 # 后台清理间隔（分钟）；最小 5
-  orphan_grace_days: 1 # 会话/项目已删除但目录残留时，闲置多少天后回收
-  active_grace_hours: 24 # 最近有活动的会话一律跳过，避免误删正在跑的任务数据
-  # 各类别 retention_days：省略时使用下方默认值；0 表示不按保留期清理（孤儿目录仍会回收）
-  categories:
-    workspace: # Agent 工作区 tmp/workspace；默认 30 天
-      enabled: true
-      retention_days: 30
-    reduction: # 超长工具输出落盘 tmp/reduction；默认 7 天（纯派生数据）
-      enabled: true
-      retention_days: 7
-    conversation_artifacts: # 摘要与超长输入台账 data/conversation_artifacts；默认 30 天
-      enabled: true
-      retention_days: 30
-    plantask: # 多代理计划看板 skills/.eino/plantask；默认 30 天（纯派生数据）
-      enabled: true
-      retention_days: 30
-    c2_artifacts: # C2 回传截图/上传件/下发文件/payload tmp/c2；默认 30 天
-      enabled: true # 注意：清理 payload 后对应下载链接会失效
-      retention_days: 30
-    chat_uploads: # 对话上传附件 chat_uploads；默认 90 天
-      enabled: true
-      retention_days: 90
-    workflow_checkpoints: # 工作流断点 data/workflow-checkpoints；默认 7 天
-      enabled: true
-      retention_days: 7
-    diagnostic_logs: # 诊断日志 log/diagnostic-*.log；默认 14 天
-      enabled: true # 与 log.diagnostic_retention_days 各自独立生效，取先到者
-      retention_days: 14
-# ============================================
-# 对话相关配置
-# ============================================
-
-# AI 通道配置（支持保存多个 OpenAI 兼容 / Claude 通道）
-# default_channel 指定新对话与未显式选择通道的任务使用哪个通道。
-# 每个 channels.<id> 必填：api_key, base_url, model。
-# 支持的 API 服务商：
-#   - OpenAI: https://api.openai.com/v1
-#   - DeepSeek: https://api.deepseek.com/v1
-#   - 其他兼容 OpenAI 协议的 API
-# 常用模型: gpt-4, gpt-3.5-turbo, deepseek-chat, claude-3-opus 等
-# provider: 可选值 openai_compatible(默认) | claude(Eino 原生 Anthropic Messages API)
 ai:
   default_channel: qwen-max
   channels:
@@ -136,38 +83,6 @@ ai:
     #   max_total_tokens: 120000
     #   max_completion_tokens: 32768
 # 视觉分析（analyze_image MCP 工具；图片仅在单次 VL 调用中出现，Agent 上下文只保留文字摘要）
-vision:
-  enabled: false # true 且 model 非空时注册 analyze_image
-  model: qwen-vl # VL 模型名（enabled 时必填）
-  api_key: "" # 留空则复用默认 AI 通道 api_key
-  base_url: "" # 留空则复用默认 AI 通道 base_url
-  provider: # 留空则复用默认 AI 通道 provider（openai_compatible | claude）
-  max_image_bytes: 5242880 # 原始文件上限（字节），默认 5MB
-  max_dimension: 2048 # 长边缩放像素
-  jpeg_quality: 82
-  max_payload_bytes: 524288 # 编码后送 VL API 上限，默认 512KB
-  skip_preprocess_below_bytes: 2097152 # 低于 2MB 且长边<=max_dimension 且<=max_payload 时原图直传；0=始终压缩
-  detail: auto # low | high | auto（Eino ImageURLDetail）
-  timeout_seconds: 60
-# ============================================
-# 资产管理（网络空间测绘搜索）配置（可选）
-# ============================================
-# 用于「资产管理 → 信息收集」页面调用 FOFA / ZoomEye / Quake / Shodan API
-# 后端代理请求，避免前端暴露 key；环境变量优先级更高
-fofa:
-  base_url: https://fofa.info/api/v1/search/all # 可选，留空则使用默认
-  api_key: "" # FOFA API Key（可选，建议在系统设置中填写）
-zoomeye:
-  base_url: https://api.zoomeye.ai/v2/search # 可选，留空则使用默认
-  api_key: "" # ZoomEye API Key；也可通过 ZOOMEYE_API_KEY 环境变量配置
-quake:
-  base_url: https://quake.360.net/api/v3/search/quake_service # 可选，留空则使用默认
-  api_key: "" # Quake API Token；也可通过 QUAKE_API_KEY 环境变量配置
-shodan:
-  base_url: https://api.shodan.io # 可选，留空则使用默认
-  api_key: "" # Shodan API Key；也可通过 SHODAN_API_KEY 环境变量配置
-# Agent 配置
-# 达到最大迭代次数时，AI 会自动总结测试结果
 agent:
   # 修改后重启服务，对新任务生效；例如 1440 = 24 小时，单次工具超时独立生效。
   task_timeout_minutes: 600 # 任务执行超时（分钟）；未配置=600，0=不限时，负数无效；续跑重新计时
@@ -200,139 +115,6 @@ tool_guard:
 # 非白名单工具在审批方=审计 Agent 时，按会话 HITL 模式选用提示词：
 #   approval → audit_agent_prompt
 #   review_edit → audit_agent_prompt_review_edit（可改参后放行）
-hitl:
-  # 全局默认人机协同模式：off=关闭，approval=审批模式，review_edit=审查编辑；新建会话无独立配置时沿用
-  default_mode: off
-  # 全局默认审批方：human=人工审批，audit_agent=审计 Agent；新建会话无独立配置时沿用
-  default_reviewer: human
-  # 全局默认审批等待时限（秒）：300=5分钟，0=不限时；新建会话无独立配置时沿用
-  default_timeout_seconds: 300
-  # 审计 Agent 后端二选一：openai=兼容协议聊天模型（提示词 JSON）；typesafe=TypeSafe Jev 结构化放通/拦截。
-  audit_backend: openai
-  # 审计 Agent 专用模型。openai 后端字段留空则复用主模型；typesafe 后端 api_key 必填且不继承主模型密钥。
-  audit_model:
-    provider: "" # openai / claude；仅 openai 后端生效，留空跟随 openai.provider
-    base_url: "" # openai 后端留空跟随主模型；typesafe 后端留空使用 https://api.typesafe.ai
-    api_key: "" # openai 后端留空跟随主模型；typesafe 后端填写 TypeSafe API Key
-    model: "" # openai 后端建议填小模型；typesafe 后端留空使用 jev-latest
-    reasoning:
-      profile: "" # auto / deepseek_compat / openai_compat；仅控制审计请求的 thinking 字段
-  # 已决策审计日志保留天数（与 MCP 监控一致；省略默认 90；0 表示不自动清理）
-  retention_days: 90
-  # 按你环境里的真实工具名增删（与侧栏一致、小写不敏感）；不需要全局免审批可改为 []
-  tool_whitelist: [read_file, ls, list_dir, glob, grep, tool_search, upsert_project_fact, get_project_fact, list_project_facts, search_project_facts, list_vulnerabilities, get_vulnerability, get_asset, query_assets, list_knowledge_risk_types, get_tool_execution, wait_tool_execution, batch_task_list, batch_task_get, manage_webshell_list, c2_event, c2_file]
-  # audit_agent_prompt: |  # 审批模式；留空使用内置默认，可在「人机协同」页编辑。openai 后端作聊天提示词；typesafe 后端作为 Jev 组织策略
-  # audit_agent_prompt_review_edit: |  # 审查编辑模式；留空使用内置默认
-
-  audit_agent_prompt: |-
-    你是 CyberStrikeAI 人机协同审计 Agent。审查 Agent 即将执行的工具调用是否会对系统造成实质性损害。
-
-    你会收到 JSON，包含 hitlMode、toolName、arguments/argumentsObj、userMessage、thinking、reasoningChain、planning 等字段。
-
-    规则优先级：
-    - 必须 reject 的规则
-    - 必须 approve 的规则
-    - 默认放行规则
-
-    规则匹配要求：
-    - 如果同时命中 reject 和 approve，必须 reject。
-    - 每次裁决必须给出一个规则编号，不得输出“命中规则：无”。
-    - 未命中明确 reject 或 approve 规则，但未发现明确破坏行为时，命中 D1：默认放行。
-    - 不得仅凭“本地执行”“设置超时”“文件名包含 test”判断脚本无害；必须检查实际 command、代码或请求参数。
-    - 如果脚本具体内容不可见，应表述为“当前参数未显示明确高危操作”，不能断言“无持久化影响”。
-
-    裁决基调（默认放行）：
-    - 绝大多数渗透测试操作（包括各类攻击 payload）都应放行
-    - 在裁决之前需要判断出：1、此请求的是干什么（理解请求内容）？2、此请求造成什么后果？
-    - 仅在「明确会直接破坏目标业务系统正常运行，或造成真实用户数据丢失/不可逆篡改」时 → reject
-    - 信息不足、参数略宽泛、仅为探测意图时 → approve
-    - 拿不准时 → approve（宁可放过可恢复的测试，不要误拦合法攻击）
-
-    必须 reject 的高危情形（示例，非穷举）：
-    - 修改/重置任意用户或管理员密码、强制下线真实用户
-    - 修改服务器或服务配置（系统配置、Web/数据库参数、防火墙、启动项、计划任务）
-    - 修改/创建/删除用户、角色、权限（账户体系篡改）
-    - 删除或大规模破坏数据/文件（DROP/TRUNCATE/DELETE 全表、rm 重要文件、清空数据库）
-    - 停止、禁用、重启业务服务（systemctl stop、kill 关键进程、shutdown、reboot）
-    - 大规模压测或高并发造成 DoS
-
-    以下情形必须 approve（即使看起来“攻击性强”或包含写操作）：
-    - 各类漏洞探测与利用 payload（SQL 注入含读写型、命令注入、反序列化、文件包含、路径遍历、SSRF、SSTI、XXE 等）
-    - 文件上传测试，包括上传 webshell、写入 webshell 文件
-    - 命令执行探测、反弹 Shell、dnslog / 数据外带探测
-    - 数据库命令执行、写文件、写计划任务、内存马注入等 getshell 利用
-    - 常规速率的口令爆破（非 DoS 级）
-    - 信息收集、端口/目录扫描、枚举、抓取
-    - 读取、查询、探测类操作（含敏感文件）
-    - 攻陷后无害侦察命令（whoami/id/uname/ls/cat 等）
-    - 参数宽泛但无明确破坏意图的请求
-
-    判定原则：
-    - “写”本身不是拦截理由——渗透测试大量依赖写操作（注入、上传、爆破、getshell）
-    - 关键看是否破坏「业务可用性 / 关键数据完整性」
-    - 只有明确命中上方 reject 清单才 reject
-
-    仅输出一行 JSON，不要 markdown 代码块：
-    {"decision":"approve"|"reject","comment":"实际操作：...；成功后的后果：...；命中规则：..."}
-  audit_agent_prompt_review_edit: |-
-    你是 CyberStrikeAI 人机协同审计 Agent。审查 Agent 即将执行的工具调用是否会对系统造成实质性损害。
-
-    你会收到 JSON，包含 hitlMode、toolName、arguments/argumentsObj、userMessage、thinking、reasoningChain、planning 等字段。
-
-    规则优先级：
-    - 必须 reject 的规则
-    - 必须 approve 的规则
-    - 默认放行规则
-
-    规则匹配要求：
-    - 如果同时命中 reject 和 approve，必须 reject。
-    - 每次裁决必须给出一个规则编号，不得输出“命中规则：无”。
-    - 未命中明确 reject 或 approve 规则，但未发现明确破坏行为时，命中 D1：默认放行。
-    - 不得仅凭“本地执行”“设置超时”“文件名包含 test”判断脚本无害；必须检查实际 command、代码或请求参数。
-    - 如果脚本具体内容不可见，应表述为“当前参数未显示明确高危操作”，不能断言“无持久化影响”。
-
-    裁决基调（默认放行）：
-    - 绝大多数渗透测试操作（包括各类攻击 payload）都应放行
-    - 在裁决之前需要判断出：1、此请求的是干什么（理解请求内容）？2、此请求造成什么后果？
-    - 仅在「明确会直接破坏目标业务系统正常运行，或造成真实用户数据丢失/不可逆篡改」时 → reject
-    - 信息不足、参数略宽泛、仅为探测意图时 → approve
-    - 拿不准时 → approve（宁可放过可恢复的测试，不要误拦合法攻击）
-
-    必须 reject 的高危情形（示例，非穷举）：
-    - 修改/重置任意用户或管理员密码、强制下线真实用户
-    - 修改服务器或服务配置（系统配置、Web/数据库参数、防火墙、启动项、计划任务）
-    - 修改/创建/删除用户、角色、权限（账户体系篡改）
-    - 删除或大规模破坏数据/文件（DROP/TRUNCATE/DELETE 全表、rm 重要文件、清空数据库）
-    - 停止、禁用、重启业务服务（systemctl stop、kill 关键进程、shutdown、reboot）
-    - 大规模压测或高并发造成 DoS
-
-    以下情形必须 approve（即使看起来“攻击性强”或包含写操作）：
-    - 各类漏洞探测与利用 payload（SQL 注入含读写型、命令注入、反序列化、文件包含、路径遍历、SSRF、SSTI、XXE 等）
-    - 文件上传测试，包括上传 webshell、写入 webshell 文件
-    - 命令执行探测、反弹 Shell、dnslog / 数据外带探测
-    - 数据库命令执行、写文件、写计划任务、内存马注入等 getshell 利用
-    - 常规速率的口令爆破（非 DoS 级）
-    - 信息收集、端口/目录扫描、枚举、抓取
-    - 读取、查询、探测类操作（含敏感文件）
-    - 攻陷后无害侦察命令（whoami/id/uname/ls/cat 等）
-    - 参数宽泛但无明确破坏意图的请求
-
-    判定原则：
-    - “写”本身不是拦截理由——渗透测试大量依赖写操作（注入、上传、爆破、getshell）
-    - 关键看是否破坏「业务可用性 / 关键数据完整性」
-    - 只有明确命中上方 reject 清单才 reject
-
-    仅输出一行 JSON，不要 markdown 代码块：
-    {"decision":"approve"|"reject","comment":"实际操作：...；成功后的后果：...；命中规则：...","editedArguments":{...}}
-
-    editedArguments 规则（仅 approve 且需要改参时填写，否则省略该字段）：
-    - 提供完整替换后的工具参数对象，键名与 argumentsObj 一致
-    - 只做最小必要修改以收窄范围、消除风险（如限制 path、去掉危险 flag）
-    - 禁止扩大攻击面：不得扩大目标范围、提升权限或引入破坏性参数
-    - 无法安全改参且存在上述高危情形时应 reject，不要勉强 approve
-# 多代理与 Eino 单代理（CloudWeGo Eino ADK；单代理入口 /api/eino-agent*，多代理 /api/multi-agent*）
-# 依赖在 go.mod 中拉取；若下载失败可设置: go env -w GOPROXY=https://goproxy.cn,direct
-# Deep / Plan-Execute / Supervisor 由对话页与 WebShell 所选模式在请求体 orchestration 中指定；机器人按 robot_default_agent_mode
 multi_agent:
   enabled: true
   robot_default_agent_mode: eino_single # 企微/钉钉/飞书机器人默认：eino_single | deep | plan_execute | supervisor
@@ -449,137 +231,6 @@ mcp:
 external_mcp:
   servers: {}
 # 内置 C2：本机仅做对话/知识库时可设为 false，不启动监听器、不注册 C2 MCP 工具；省略本段时默认启用
-c2:
-  enabled: true
-# ============================================
-# 知识库相关配置
-# ============================================
-knowledge:
-  enabled: false # 是否启用知识检索功能
-  base_path: knowledge_base # 知识库目录路径（相对于配置文件所在目录）
-  embedding:
-    provider: openai # 嵌入模型提供商（目前仅支持openai）
-    model: text-embedding-v4 # 嵌入模型名称
-    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1 # 留空则使用OpenAI配置的base_url
-    api_key: sk-xxxxxxx # 留空则使用OpenAI配置的api_key
-  retrieval:
-    top_k: 5 # 检索返回的Top-K结果数量
-    similarity_threshold: 0.4 # 余弦相似度阈值（0-1），低于此值的结果将被过滤
-    # Eino MultiQuery：LLM 改写查询后多路向量检索再融合（始终启用）
-    multi_query:
-      max_queries: 4 # 改写变体上限（含语义覆盖）；建议 3~4
-    # 精排（始终启用）：dashscope 用 gte-rerank；其他 OpenAI 兼容端点走 /v1/rerank
-    rerank:
-      provider: "" # 空=按 base_url 推断：dashscope | cohere
-      model: "" # 空=dashscope→gte-rerank，cohere→rerank-multilingual-v3.0
-      base_url: "" # 留空则用 embedding / openai 的 base_url
-      api_key: "" # 留空则用 embedding / openai 的 api_key
-    post_retrieve:
-      prefetch_top_k: 20 # 每条 MultiQuery 变体的向量候选数；0=内置 max(top_k*4,20)
-      max_context_chars: 0 # 0 不限制；否则返回的正文总 Unicode 字符上限（整段 chunk）
-      max_context_tokens: 0 # 0 不限制；tiktoken 总 token 上限
-    sub_index_filter: ""
-  # ============================================
-  # 索引配置（用于解决 API 限制问题）
-  # ============================================
-  indexing:
-    # 分块配置
-    chunk_size: 512 # 每个块的最大 token 数（默认 512），长文本会被分割成多个块
-    chunk_overlap: 50 # 块之间的重叠 token 数（默认 50），保持上下文连贯性
-    max_chunks_per_item: 0 # 单个知识项的最大块数量（0 表示不限制），防止单个文件消耗过多 API 配额
-    # 速率限制配置（解决 429 错误）
-    max_rpm: 0 # 每分钟最大请求数（默认 0 表示不限制），如 OpenAI 默认 200 RPM
-    rate_limit_delay_ms: 300 # 请求间隔毫秒数（默认 300），用于避免 API 速率限制，设为 0 不限制
-    # 建议值：200 次/分钟≈300ms, 100 次/分钟≈600ms
-
-    # 重试配置
-    max_retries: 3 # 最大重试次数（默认 3），遇到速率限制或服务器错误时自动重试
-    retry_delay_ms: 1000 # 重试间隔毫秒数（默认 1000），每次重试会递增延迟
-    # 分块策略（Eino）：markdown_then_recursive = 先按 Markdown 标题切再递归；recursive = 仅递归切分。留空时程序内默认 markdown_then_recursive
-    chunk_strategy: markdown_then_recursive
-    # 嵌入 HTTP 请求超时（秒）。0 表示使用内置默认（一般为 120），与向量化 API 客户端一致
-    request_timeout_seconds: 120
-    # true：索引时优先用知识项 file_path 指向的磁盘文件内容（Eino FileLoader）；false：用数据库里存的正文。读盘失败会回退 DB
-    prefer_source_file: false
-    # 单次嵌入 API 请求的文本条数上限（索引写入按此分批）。须 ≤ 服务商限制（如部分兼容接口最多 10）；过大易 400
-    batch_size: 10
-    # Eino indexer.WithSubIndexes：逻辑分区标签列表，会写入向量表 sub_indexes，检索可用 sub_index_filter 过滤；无需求可 []
-    sub_indexes: []
-# ============================================
-# 机器人配置（企业微信、钉钉、飞书）
-# ============================================
-# 用于在手机端通过企业微信/钉钉/飞书与 CyberStrikeAI 对话，无需部署在服务器上也可使用
-# 在系统设置 -> 机器人设置 中可配置
-robots:
-  wechat: # 微信 iLink（个人微信 ClawBot，扫码绑定）
-    enabled: false
-    # 鉴权默认 user_binding；专用机器人可改 service_account，并必须限制真实发送者
-    auth:
-      mode: user_binding # user_binding | service_account
-      # service_user_id: "admin 或专用服务账号的 RBAC user ID"
-      # allowed_external_users: ["t:tenant|u:sender"]
-    bot_token: ""
-    ilink_bot_id: ""
-    ilink_user_id: ""
-    base_url: https://ilinkai.weixin.qq.com
-    bot_type: "3"
-    bot_agent: CyberStrikeAI/1.0
-  wecom: # 企业微信
-    enabled: false
-    auth:
-      mode: user_binding
-    token: ""
-    encoding_aes_key: ""
-    corp_id: ""
-    secret: ""
-    agent_id: 0
-  dingtalk: # 钉钉
-    enabled: false
-    auth:
-      mode: user_binding
-    client_id: ""
-    client_secret: ""
-    allow_conversation_id_fallback: false
-  lark: # 飞书
-    enabled: false
-    auth:
-      mode: user_binding
-    app_id: ""
-    app_secret: ""
-    verify_token: ""
-    allow_chat_id_fallback: false
-  telegram: # Telegram
-    enabled: false
-    auth:
-      mode: user_binding
-    bot_token: ""
-    bot_username: ""
-    allow_group_messages: false
-  slack: # Slack
-    enabled: false
-    auth:
-      mode: user_binding
-    bot_token: ""
-    app_token: ""
-  discord: # Discord
-    enabled: false
-    auth:
-      mode: user_binding
-    bot_token: ""
-    allow_guild_messages: false
-  qq: # QQ 机器人
-    enabled: false
-    auth:
-      mode: user_binding
-    app_id: ""
-    client_secret: ""
-    sandbox: true
-# ============================================
-# Skills 相关配置
-# ============================================
-
-# 技能包目录：每个子目录仅标准 SKILL.md（Agent Skills：front matter 仅 name、description）+ 可选附属文件；无 SKILL.yaml
-# 示例：skills/cyberstrike-eino-demo/
 skills_dir: skills # Skills配置文件目录（相对于配置文件所在目录）
 # ============================================
 # 多代理子 Agent（Markdown，唯一维护处）
@@ -587,36 +238,7 @@ skills_dir: skills # Skills配置文件目录（相对于配置文件所在目�
 # 每个 .md：YAML front matter（name / id / description / tools / bind_role / 可选 max_iterations>0 覆盖全局 / 可选 kind: orchestrator）+ 正文为系统提示词
 # 主代理：固定文件名 orchestrator.md，或任意文件名 + front matter kind: orchestrator（全目录仅允许一个）；主代理不参与 task 子代理列表
 # 高级用法：仍可在 multi_agent 块内写 sub_agents，会与本文目录合并且同 id 时 YAML 可被 .md 覆盖
-agents_dir: agents
-# ============================================
-# 角色相关配置
-# ============================================
-
-# 系统会从该目录加载所有 .yaml 格式的角色配置文件
-# 每个角色应创建独立的配置文件，例如：roles/CTF.yaml, roles/默认.yaml 等
 roles_dir: roles # 角色配置文件目录（相对于配置文件所在目录）
 # ============================================
 # 项目管理与事实黑板
 # ============================================
-project:
-  enabled: true
-  # 压缩时自动保存续接摘要为 tentative note（每会话/代理更新一条，不替代已确认事实）
-  context_checkpoints: true
-  # default_project_id: "" # 可选：机器人/批量任务创建对话时的默认项目 ID
-  # 项目续接补充包含在事实索引预算内；工作文件候选清单另有最多 4000 字符预算
-  fact_index_max_runes: 65000
-  # 事实关系速览段预算（从索引总预算中预留）
-  fact_index_path_max_runes: 10000
-  fact_summary_max_runes: 24000
-  default_inject_deprecated: false
-
-# ============================================
-# 一键更新（可选）
-# ============================================
-# 更新源：一个仓库地址，更新跟随该仓库自己的默认分支；不配置时就是官方仓库
-# （https://github.com/AIPentest/CyberStrikeAI.git）。GitHub 访问不畅时可在这里填镜像地址，
-# 想跟随自己的二开也只改这一处；控制台「系统设置 → 一键更新」页可以直接填写保存。
-# 非 git 目录（解压/打包安装）不需要配置，也能在控制台「一键更新」页执行「接入更新源」，
-# 把目录变成跟踪该仓库的 git 工作树，此后按正常安装一键更新。
-# update:
-#   repo: https://github.com/AIPentest/CyberStrikeAI.git  # 一个仓库地址；留空/不写 = 官方仓库

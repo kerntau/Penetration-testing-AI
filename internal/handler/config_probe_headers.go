@@ -37,13 +37,9 @@ func (h *ConfigHandler) resolveProbeHeaders(req TestOpenAIRequest) (map[string]s
 			return nil, fmt.Errorf("未知通道，无法恢复请求头凭据")
 		}
 		stored = ch.ToOpenAIConfig()
-		if req.CredentialScope == "hitlAudit" {
-			stored = h.config.Hitl.AuditModelEffective(stored)
-		} else if req.CredentialScope != "" && req.CredentialScope != "openai" {
+		if req.CredentialScope != "" && req.CredentialScope != "openai" {
 			return nil, fmt.Errorf("请求头凭据范围不匹配")
 		}
-	case req.CredentialScope == "hitlAudit":
-		stored = h.config.Hitl.AuditModelEffective(h.config.OpenAI)
 	case req.CredentialScope == "openai":
 		stored = h.config.OpenAI
 	default:

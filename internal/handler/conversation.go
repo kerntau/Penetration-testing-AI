@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"cyberstrike-ai/internal/audit"
 	"cyberstrike-ai/internal/database"
 	"cyberstrike-ai/internal/security"
 	"github.com/gin-gonic/gin"
@@ -31,14 +30,8 @@ type ConversationTaskStateProvider interface {
 type ConversationHandler struct {
 	db          *database.DB
 	logger      *zap.Logger
-	audit       *audit.Service
 	taskStopper ConversationTaskStopper
 	taskState   ConversationTaskStateProvider
-}
-
-// SetAudit wires platform audit logging.
-func (h *ConversationHandler) SetAudit(s *audit.Service) {
-	h.audit = s
 }
 
 // SetTaskStopper wires cancellation of in-flight agent tasks on conversation delete.
@@ -62,13 +55,7 @@ func NewConversationHandler(db *database.DB, logger *zap.Logger) *ConversationHa
 
 // CreateConversationRequest 创建对话请求
 type CreateConversationRequest struct {
-	Title     string `json:"title"`
-	ProjectID string `json:"projectId,omitempty"`
-}
-
-// SetConversationProjectRequest 设置对话所属项目
-type SetConversationProjectRequest struct {
-	ProjectID string `json:"projectId"` // 空字符串表示解除绑定
+	Title string `json:"title"`
 }
 
 // CreateConversation 创建新对话
@@ -84,63 +71,14 @@ func (h *ConversationHandler) CreateConversation(c *gin.Context) {
 		title = "新对话"
 	}
 
-	meta := audit.ConversationCreateMetaFromGin(c, "api")
-	meta.ProjectID = strings.TrimSpace(req.ProjectID)
-	if !h.conversationProjectAllowed(c, meta.ProjectID) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "无权访问目标项目"})
-		return
-	}
-	conv, err := h.db.CreateConversation(title, meta)
+	conv, err := h.db.CreateConversation(title, database.ConversationCreateMeta{Source: "api"})
 	if err != nil {
 		h.logger.Error("创建对话失败", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if session, ok := security.CurrentSession(c); ok {
-		_ = h.db.SetResourceOwner("conversation", conv.ID, session.UserID)
-		_ = h.db.AssignResourceToUser(session.UserID, "conversation", conv.ID)
-		if conv.ProjectID != "" {
-			_ = h.db.AssignResourceToUser(session.UserID, "project", conv.ProjectID)
-		}
-	}
 
 	c.JSON(http.StatusOK, conv)
-}
-
-// SetConversationProject 设置或清除对话绑定的项目
-func (h *ConversationHandler) SetConversationProject(c *gin.Context) {
-	id := c.Param("id")
-	var req SetConversationProjectRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	if _, err := h.db.GetConversation(id); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "对话不存在"})
-		return
-	}
-	projectID := strings.TrimSpace(req.ProjectID)
-	if !h.conversationProjectAllowed(c, projectID) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "无权访问目标项目"})
-		return
-	}
-	if err := h.db.SetConversationProjectID(id, projectID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"success": true, "projectId": projectID})
-}
-
-func (h *ConversationHandler) conversationProjectAllowed(c *gin.Context, projectID string) bool {
-	projectID = strings.TrimSpace(projectID)
-	if projectID == "" {
-		return true
-	}
-	session, ok := security.CurrentSession(c)
-	if !ok {
-		return false
-	}
-	return h.db.UserCanAccessResource(session.UserID, session.Scope, "project", projectID)
 }
 
 // ListConversations 列出对话
@@ -148,7 +86,6 @@ func (h *ConversationHandler) ListConversations(c *gin.Context) {
 	limitStr := c.DefaultQuery("limit", "50")
 	offsetStr := c.DefaultQuery("offset", "0")
 	search := c.Query("search") // 获取搜索参数
-	projectID := strings.TrimSpace(c.Query("project_id"))
 
 	limit, _ := strconv.Atoi(limitStr)
 	offset, _ := strconv.Atoi(offsetStr)
@@ -166,9 +103,9 @@ func (h *ConversationHandler) ListConversations(c *gin.Context) {
 	var conversations []*database.Conversation
 	var total int
 	var err error
-	conversations, err = h.db.ListConversationsForAccess(limit, offset, search, sortBy, projectID, session.UserID, session.Scope)
+	conversations, err = h.db.ListConversationsForAccess(limit, offset, search, sortBy, "", session.UserID, session.Scope)
 	if err == nil {
-		total, err = h.db.CountConversationsForAccess(search, projectID, session.UserID, session.Scope)
+		total, err = h.db.CountConversationsForAccess(search, "", session.UserID, session.Scope)
 	}
 	if err != nil {
 		h.logger.Error("获取对话列表失败", zap.Error(err))
@@ -589,17 +526,6 @@ func (h *ConversationHandler) DeleteConversation(c *gin.Context) {
 		return
 	}
 
-	if h.audit != nil {
-		h.audit.Record(c, audit.Entry{
-			Category:     "conversation",
-			Action:       "delete",
-			Result:       "success",
-			ResourceType: "conversation",
-			ResourceID:   id,
-			Message:      "删除对话",
-		})
-	}
-
 	c.JSON(http.StatusOK, gin.H{"message": "删除成功"})
 }
 
@@ -638,12 +564,6 @@ func (h *ConversationHandler) DeleteConversationTurn(c *gin.Context) {
 		return
 	}
 
-	if h.audit != nil {
-		h.audit.RecordOK(c, "conversation", "delete_turn", "删除对话轮次", "conversation", conversationID, map[string]interface{}{
-			"message_id": req.MessageID,
-			"deleted":    len(deletedIDs),
-		})
-	}
 	c.JSON(http.StatusOK, gin.H{
 		"deletedMessageIds": deletedIDs,
 		"message":           "ok",

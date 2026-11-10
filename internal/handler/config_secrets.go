@@ -20,9 +20,7 @@ func secretConfigKey(key string) bool {
 }
 
 func configSecretSnapshot(cfg *config.Config) GetConfigResponse {
-	return GetConfigResponse{AI: cfg.AI, OpenAI: cfg.OpenAI, Vision: cfg.Vision, FOFA: cfg.FOFA,
-		ZoomEye: cfg.ZoomEye, Quake: cfg.Quake, Shodan: cfg.Shodan, MCP: cfg.MCP,
-		Hitl: cfg.Hitl, Knowledge: cfg.Knowledge, Robots: cfg.Robots}
+	return GetConfigResponse{AI: cfg.AI, OpenAI: cfg.OpenAI, MCP: cfg.MCP}
 }
 
 func jsonSecretTree(value interface{}) (interface{}, error) {
@@ -154,12 +152,6 @@ func (h *ConfigHandler) resolveProbeSecret(key, channelID, baseURL, scope string
 	}
 	var scoped string
 	switch scope {
-	case "vision":
-		scoped = h.config.Vision.APIKey
-	case "hitlAudit":
-		scoped = h.config.Hitl.AuditModel.APIKey
-	case "knowledgeEmbedding":
-		scoped = h.config.Knowledge.Embedding.APIKey
 	case "openai":
 		scoped = h.config.OpenAI.APIKey
 	case "":
@@ -185,10 +177,6 @@ func (h *ConfigHandler) resolveProbeSecret(key, channelID, baseURL, scope string
 	for _, ch := range h.config.AI.Channels {
 		add(ch.BaseURL, ch.APIKey)
 	}
-	add(h.config.Hitl.AuditModel.BaseURL, h.config.Hitl.AuditModel.APIKey)
-	add(h.config.Vision.BaseURL, h.config.Vision.APIKey)
-	add(h.config.Knowledge.Embedding.BaseURL, h.config.Knowledge.Embedding.APIKey)
-	add(h.config.Knowledge.Retrieval.Rerank.BaseURL, h.config.Knowledge.Retrieval.Rerank.APIKey)
 	if len(keys) == 1 {
 		for secret := range keys {
 			return secret, nil

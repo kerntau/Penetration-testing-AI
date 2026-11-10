@@ -11,7 +11,6 @@ import (
 	"cyberstrike-ai/internal/config"
 	"cyberstrike-ai/internal/database"
 	copenai "cyberstrike-ai/internal/openai"
-	"cyberstrike-ai/internal/project"
 
 	"github.com/bytedance/sonic"
 	einoopenai "github.com/cloudwego/eino-ext/components/model/openai"
@@ -267,9 +266,6 @@ func newEinoSummarizationMiddleware(
 				return nil, ferr
 			}
 			out = mergeMessageIntoLeadingSystem(out, userLedger)
-			if appCfg != nil {
-				out = refreshFactIndexInMessages(out, db, projectID, appCfg.Project, logger, conversationID)
-			}
 			return out, nil
 		},
 		Callback: func(ctx context.Context, before, after adk.ChatModelAgentState) error {
@@ -472,63 +468,6 @@ func buildPlaintextSummarizationInput(
 	return input
 }
 
-// refreshFactIndexInMessages 在 summarization 压缩后，用 DB 最新索引替换 system 中已有的项目黑板索引段。
-func refreshFactIndexInMessages(msgs []adk.Message, db *database.DB, projectID string, cfg config.ProjectConfig, logger *zap.Logger, conversationIDs ...string) []adk.Message {
-	if db == nil || !cfg.Enabled {
-		return msgs
-	}
-	projectID = strings.TrimSpace(projectID)
-	if projectID == "" {
-		return msgs
-	}
-	freshIndex, err := project.BuildFactIndexBlock(db, projectID, cfg, conversationIDs...)
-	if err != nil {
-		if logger != nil {
-			logger.Warn("summarization: 刷新项目黑板索引失败", zap.String("projectId", projectID), zap.Error(err))
-		}
-		return msgs
-	}
-	freshIndex = strings.TrimSpace(freshIndex)
-	// A successful empty build means the old block must be removed. Errors
-	// above retain the previous index instead of silently discarding context.
-	changed := false
-	out := make([]adk.Message, len(msgs))
-	for i, msg := range msgs {
-		if msg == nil || msg.Role != schema.System {
-			out[i] = msg
-			continue
-		}
-		var newContent string
-		var ok bool
-		if freshIndex == "" {
-			newContent, ok = project.RemoveFactIndexSection(msg.Content)
-		} else {
-			newContent, ok = project.ReplaceFactIndexSection(msg.Content, freshIndex)
-		}
-		if !ok {
-			out[i] = msg
-			continue
-		}
-		cloned := *msg
-		cloned.Content = newContent
-		out[i] = &cloned
-		changed = true
-	}
-	if changed && logger != nil {
-		logger.Info("summarization: 已刷新项目黑板索引", zap.String("projectId", projectID))
-	}
-	return out
-}
-
-// summarizeFinalizeWithRecentAssistantToolTrail 在摘要消息后保留最近 assistant/tool 轨迹，避免压缩后执行链断裂。
-//
-// 关键不变量：tool_call ↔ tool_result 的 pair 必须整体保留或整体丢弃。
-// 把消息切成 round（回合）为原子单位：
-//   - user(...) 单条为一个 round；
-//   - assistant(tool_calls=[...]) 及其后连续的 role=tool 消息合成一个 round；
-//   - 其它 assistant(reply, 无 tool_calls) 单条为一个 round。
-//
-// 倒序挑 round（预算不够即放弃该 round），保证 tool 消息不会跨 round 被孤立。
 func summarizeFinalizeWithRecentAssistantToolTrail(
 	ctx context.Context,
 	originalMessages []adk.Message,

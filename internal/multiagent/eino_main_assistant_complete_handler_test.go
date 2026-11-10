@@ -59,18 +59,3 @@ func TestEinoMainAssistantCompleteHandlerSuppressesDuplicateExecuteStdout(t *tes
 	}
 }
 
-func TestEinoMainAssistantCompleteHandlerRecordsWithoutProgress(t *testing.T) {
-	out := newEinoAssistantOutputAccumulator("plan_execute")
-	handler := newEinoMainAssistantCompleteHandler(einoMainAssistantCompleteHandlerConfig{
-		AgentName:       "executor",
-		Emitter:         newEinoMainResponseStreamEmitter("conv-1", "plan_execute", "executor", "stream-1", 1, nil, nil),
-		AssistantOutput: out,
-	})
-
-	if handler.EmitComplete(`{"response":"done"}`) {
-		t.Fatal("nil progress should not emit")
-	}
-	if out.LastPlanExecuteExecutor() != "done" {
-		t.Fatalf("executor output = %q", out.LastPlanExecuteExecutor())
-	}
-}

@@ -1,12 +1,24 @@
 package handler
 
 import (
-	"cyberstrike-ai/internal/runlease"
+	"context"
 	"errors"
+	"net/http"
+
+	"cyberstrike-ai/internal/runlease"
+
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"net/http"
 )
+
+// detachedAgentContext lets a long-running Agent survive an SSE disconnect
+// while retaining immutable request values.
+func detachedAgentContext(parent context.Context) context.Context {
+	if parent == nil {
+		parent = context.Background()
+	}
+	return context.WithoutCancel(parent)
+}
 
 // ShutdownTasks stops local work before shared MCP clients and databases close.
 func (h *AgentHandler) ShutdownTasks() {

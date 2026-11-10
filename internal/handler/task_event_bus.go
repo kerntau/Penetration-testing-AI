@@ -2,7 +2,7 @@ package handler
 
 import "sync"
 
-// TaskEventBus 将主 SSE 连接上的事件镜像给后订阅的客户端（例如刷新页面后、HITL 审批通过需继续收事件）。
+// TaskEventBus 将主 SSE 连接上的事件镜像给后订阅的客户端（例如刷新页面后继续收事件）。
 // 每个 payload 为完整 SSE 行： "data: {...}\n\n"
 type TaskEventBus struct {
 	mu   sync.RWMutex
@@ -82,7 +82,7 @@ func (b *TaskEventBus) Unsubscribe(conversationID string, sub *taskEventSub) {
 	sub.closeOnce()
 }
 
-// Publish 非阻塞投递；慢消费者丢帧（HITL 场景以最新状态为准，丢帧可接受）。
+// Publish 非阻塞投递；慢消费者丢帧（以最新状态为准，丢帧可接受）。
 func (b *TaskEventBus) Publish(conversationID string, line []byte) {
 	if b == nil || conversationID == "" || len(line) == 0 {
 		return

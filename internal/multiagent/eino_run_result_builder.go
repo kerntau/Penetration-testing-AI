@@ -97,23 +97,13 @@ func buildEinoRunResultFromAccumulated(
 		}
 	}
 	cleaned := strings.TrimSpace(lastAssistant)
-	if orchMode == "plan_execute" {
-		if e := strings.TrimSpace(lastPlanExecuteExecutor); e != "" {
-			cleaned = e
-		} else {
-			cleaned = UnwrapPlanExecuteUserText(cleaned)
-		}
-	}
 	// exit.final_result 是正式交付物：即使助手正文已有过渡语（如「交付终审报告：」），
-	// 也必须优先采用 exit 内容，避免 supervisor 等模式只展示空壳开场白。
+	// 也必须优先采用 exit 内容，避免只展示空壳开场白。
 	if exitFinal := strings.TrimSpace(einoExtractExitDeliverableFromMsgs(runAccumulatedMsgs)); exitFinal != "" {
 		cleaned = einoMergeAssistantIntroWithExitFinal(cleaned, exitFinal)
 	} else if cleaned == "" {
 		if fb := strings.TrimSpace(einoExtractFallbackAssistantFromMsgs(runAccumulatedMsgs)); fb != "" {
 			cleaned = fb
-			if orchMode == "plan_execute" {
-				cleaned = UnwrapPlanExecuteUserText(cleaned)
-			}
 		}
 	}
 	cleaned = dedupeRepeatedParagraphs(cleaned, 80)

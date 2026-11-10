@@ -89,16 +89,12 @@ func (h *einoMaterializedMessageEventHandler) Handle(mv *adk.MessageVariant, msg
 		newEinoReasoningStreamEmitter(h.conversationID, h.orchMode, agentName, h.einoRoleTag(agentName), h.progress, nil).EmitComplete(msg.ReasoningContent)
 		body := strings.TrimSpace(msg.Content)
 		if body != "" {
-			if h.streamsMainAssistant(agentName) {
-				newEinoMainAssistantCompleteHandler(einoMainAssistantCompleteHandlerConfig{
-					AgentName:        agentName,
-					Emitter:          newEinoMainResponseStreamEmitter(h.conversationID, h.orchMode, agentName, h.nextMainStreamID(), h.mainIteration(agentName), h.progress, h.snapshotMCPIDs),
-					StdoutSuppressor: h.stdoutSuppressor,
-					AssistantOutput:  h.assistantOutput,
-				}).EmitComplete(body)
-			} else {
-				newEinoSubAgentReplyEmitter(h.conversationID, agentName, h.progress, nil).EmitComplete(body)
-			}
+			newEinoMainAssistantCompleteHandler(einoMainAssistantCompleteHandlerConfig{
+				AgentName:        agentName,
+				Emitter:          newEinoMainResponseStreamEmitter(h.conversationID, h.orchMode, agentName, h.nextMainStreamID(), h.mainIteration(agentName), h.progress, h.snapshotMCPIDs),
+				StdoutSuppressor: h.stdoutSuppressor,
+				AssistantOutput:  h.assistantOutput,
+			}).EmitComplete(body)
 		}
 	}
 	if h.toolResultHandler != nil {

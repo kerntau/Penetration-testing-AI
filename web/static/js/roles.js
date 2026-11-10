@@ -495,12 +495,6 @@ function toggleRoleSelectionPanel() {
     const isHidden = !isRoleSelectionPanelOpen();
     
     if (isHidden) {
-        if (typeof closeAgentModePanel === 'function') {
-            closeAgentModePanel();
-        }
-        if (typeof closeChatProjectPanel === 'function') {
-            closeChatProjectPanel();
-        }
         if (typeof closeChatReasoningPanel === 'function') {
             closeChatReasoningPanel();
         }
@@ -1303,13 +1297,6 @@ async function showAddRoleModal() {
     document.getElementById('role-icon').value = '';
     document.getElementById('role-user-prompt').value = '';
     document.getElementById('role-enabled').checked = true;
-    if (typeof loadWorkflowOptionsForRoleModal === 'function') {
-        await loadWorkflowOptionsForRoleModal('');
-    }
-    const workflowPolicy = document.getElementById('role-workflow-policy');
-    if (workflowPolicy) {
-        workflowPolicy.value = 'auto';
-    }
 
     // 添加角色时：显示工具选择界面，隐藏默认角色提示
     const toolsSection = document.getElementById('role-tools-section');
@@ -1397,13 +1384,6 @@ async function editRole(roleName) {
     document.getElementById('role-icon').value = iconValue;
     document.getElementById('role-user-prompt').value = role.user_prompt || '';
     document.getElementById('role-enabled').checked = role.enabled !== false;
-    if (typeof loadWorkflowOptionsForRoleModal === 'function') {
-        await loadWorkflowOptionsForRoleModal(role.workflow_id || '');
-    }
-    const workflowPolicy = document.getElementById('role-workflow-policy');
-    if (workflowPolicy) {
-        workflowPolicy.value = role.workflow_policy || 'auto';
-    }
 
     // 检查是否为默认角色
     const isDefaultRole = roleName === '默认';

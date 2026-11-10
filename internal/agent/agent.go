@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"cyberstrike-ai/internal/c2"
 	"cyberstrike-ai/internal/config"
 	"cyberstrike-ai/internal/mcp"
 	"cyberstrike-ai/internal/mcp/builtin"
@@ -564,9 +563,6 @@ func (a *Agent) executeToolViaMCP(ctx context.Context, toolName string, args map
 			}
 		}()
 	}
-	// C2 危险任务 HITL 异步等待：须绑定整条 Agent 运行期 ctx，而非单次工具子 ctx（return 时会被 cancel）
-	toolCtx = c2.WithHITLRunContext(toolCtx, ctx)
-
 	// 检查是否是外部MCP工具（通过工具名称映射）
 	a.mu.RLock()
 	originalToolName, isExternalTool := a.toolNameMapping[toolName]

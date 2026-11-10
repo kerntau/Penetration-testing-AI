@@ -119,36 +119,10 @@ func writeContextArtifactAtomically(path string, body []byte) error {
 	return os.Rename(temp, path)
 }
 
-// Persist generated working memory separately from verified project findings.
-// One key per conversation/agent scope is updated; retries do not grow the fact index.
+// persistSummarizationCheckpoint 原本将会话摘要写入项目黑板。
+// 项目功能已移除，此处保留空实现以维持调用链。
 func persistSummarizationCheckpoint(db *database.DB, projectID, conversationID, memoryScope, summary, snapshot string, cfg config.ProjectConfig) (string, error) {
-	if db == nil || !cfg.Enabled || !cfg.ContextCheckpointsEnabled() || strings.TrimSpace(projectID) == "" || strings.TrimSpace(conversationID) == "" || strings.TrimSpace(summary) == "" {
-		return "", nil
-	}
-	// Bind storage to the current conversation rather than trusting a stale run's project ID.
-	bound, err := db.GetConversationProjectID(conversationID)
-	if err != nil {
-		return "", err
-	}
-	if bound != projectID {
-		return "", fmt.Errorf("checkpoint project does not match conversation")
-	}
-	hash := sha256.Sum256([]byte(conversationID + "\x00" + memoryScope))
-	key := fmt.Sprintf("note/context-%x", hash[:16])
-	body := "## 会话续接记录（自动摘要，尚未经独立验证）\n来源对话: " + conversationID + "\n代理范围: " + memoryScope + "\n\n" + summary
-	if snapshot != "" {
-		body = appendSummarizationSection(body, summarizationTranscriptRetrievalSection(snapshot))
-	}
-	err = db.SaveContextCheckpoint(&database.ProjectFact{
-		ProjectID: projectID, FactKey: key, Category: "note", Confidence: "tentative",
-		SourceConversationID: conversationID,
-		Summary:              checkpointSummaryLabel(memoryScope, summary, cfg.FactSummaryMaxRunesEffective()),
-		Body:                 body,
-	})
-	if err != nil {
-		return "", err
-	}
-	return key, nil
+	return "", nil
 }
 
 func checkpointSummaryLabel(scope, summary string, cap int) string {

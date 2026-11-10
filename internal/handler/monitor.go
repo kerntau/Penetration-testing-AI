@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"cyberstrike-ai/internal/audit"
 	"cyberstrike-ai/internal/config"
 	"cyberstrike-ai/internal/database"
 	"cyberstrike-ai/internal/mcp"
@@ -29,18 +28,12 @@ type MonitorHandler struct {
 	executor         *security.Executor
 	db               *database.DB
 	logger           *zap.Logger
-	audit            *audit.Service
 	monitorRetention *monitor.Service
 }
 
 // SetMonitorRetention wires MCP execution retention settings.
 func (h *MonitorHandler) SetMonitorRetention(s *monitor.Service) {
 	h.monitorRetention = s
-}
-
-// SetAudit wires platform audit logging.
-func (h *MonitorHandler) SetAudit(s *audit.Service) {
-	h.audit = s
 }
 
 // NewMonitorHandler 创建新的监控处理器
@@ -121,7 +114,7 @@ func (h *MonitorHandler) Monitor(c *gin.Context) {
 	// 解析工具筛选参数（兼容 mcp__tool 与内部 mcp::tool）
 	toolName := normalizeToolNameFilter(c.Query("tool"))
 
-	access := notificationAccessFromContext(c)
+	access := monitorAccessFromContext(c)
 	executions, total := h.loadExecutionListWithPagination(page, pageSize, status, toolName, access)
 	h.enrichExecutionsConversationID(executions)
 	var summary *MonitorStatsSummary
@@ -334,8 +327,17 @@ func toolExecutionVisible(exec *mcp.ToolExecution, access database.RBACListAcces
 	return conversationID != "" && db != nil && db.UserCanAccessResource(access.UserID, access.Scope, "conversation", conversationID)
 }
 
+// monitorAccessFromContext 构造工具执行查询的资源范围（匿名单用户模式下恒为全局范围）。
+func monitorAccessFromContext(c *gin.Context) database.RBACListAccess {
+	session, ok := security.CurrentSession(c)
+	if !ok || session == nil {
+		return database.RBACListAccess{}
+	}
+	return database.RBACListAccess{UserID: session.UserID, Scope: session.Scope}
+}
+
 func (h *MonitorHandler) monitorExecutionAllowed(c *gin.Context, id string) bool {
-	access := notificationAccessFromContext(c)
+	access := monitorAccessFromContext(c)
 	if access.Scope == database.RBACScopeAll {
 		return true
 	}
@@ -910,11 +912,6 @@ func (h *MonitorHandler) DeleteExecution(c *gin.Context) {
 		}
 
 		h.logger.Info("执行记录已从数据库删除", zap.String("executionId", id), zap.String("toolName", exec.ToolName))
-		if h.audit != nil {
-			h.audit.RecordOK(c, "tool", "execution_delete", "删除工具执行记录", "tool_execution", id, map[string]interface{}{
-				"tool_name": exec.ToolName,
-			})
-		}
 		c.JSON(http.StatusOK, gin.H{"message": "执行记录已删除"})
 		return
 	}
@@ -996,11 +993,6 @@ func (h *MonitorHandler) DeleteExecutions(c *gin.Context) {
 		}
 
 		h.logger.Info("批量删除执行记录成功", zap.Int("count", len(request.IDs)))
-		if h.audit != nil {
-			h.audit.RecordOK(c, "tool", "execution_delete_batch", "批量删除工具执行记录", "tool_execution", "", map[string]interface{}{
-				"count": len(request.IDs),
-			})
-		}
 		c.JSON(http.StatusOK, gin.H{"message": "成功删除执行记录", "deleted": len(executions)})
 		return
 	}

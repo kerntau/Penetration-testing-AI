@@ -13,11 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"cyberstrike-ai/internal/agents"
-	"cyberstrike-ai/internal/audit"
 	"cyberstrike-ai/internal/config"
 	"cyberstrike-ai/internal/database"
-	"cyberstrike-ai/internal/knowledge"
 	"cyberstrike-ai/internal/llm"
 	"cyberstrike-ai/internal/mcp"
 	"cyberstrike-ai/internal/mcp/builtin"
@@ -32,46 +29,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// KnowledgeToolRegistrar 知识库工具注册器接口
-type KnowledgeToolRegistrar func() error
-
 // VulnerabilityToolRegistrar 漏洞工具注册器接口
 type VulnerabilityToolRegistrar func() error
 
-// WebshellToolRegistrar WebShell 工具注册器接口（ApplyConfig 时重新注册）
-type WebshellToolRegistrar func() error
-
 // SkillsToolRegistrar Skills工具注册器接口
 type SkillsToolRegistrar func() error
-
-// BatchTaskToolRegistrar 批量任务 MCP 工具注册器（ApplyConfig 时重新注册）
-type BatchTaskToolRegistrar func() error
-
-// C2ToolRegistrar C2 MCP 工具注册器（ApplyConfig 时 ClearTools 之后调用）
-type C2ToolRegistrar func() error
-
-// C2Runtime ApplyConfig 时按配置启停 C2 子系统（由 internal/app.App 实现）
-type C2Runtime interface {
-	ReconcileC2AfterConfigApply() error
-}
-
-// RetrieverUpdater 检索器更新接口
-type RetrieverUpdater interface {
-	UpdateConfig(config *knowledge.RetrievalConfig)
-}
-
-// KnowledgeInitializer 知识库初始化器接口
-type KnowledgeInitializer func() (*KnowledgeHandler, error)
-
-// AppUpdater App更新接口（用于更新App中的知识库组件）
-type AppUpdater interface {
-	UpdateKnowledgeComponents(handler *KnowledgeHandler, manager interface{}, retriever interface{}, indexer interface{})
-}
-
-// RobotRestarter 机器人连接重启器（用于配置应用后重启钉钉/飞书长连接）
-type RobotRestarter interface {
-	RestartRobotConnections()
-}
 
 // ConfigHandler 配置处理器
 type ConfigHandler struct {
@@ -79,52 +41,19 @@ type ConfigHandler struct {
 	config                     *config.Config
 	mcpServer                  *mcp.Server
 	executor                   *security.Executor
-	agent                      AgentUpdater               // Agent接口，用于更新Agent配置
-	attackChainHandler         AttackChainUpdater         // 攻击链处理器接口，用于更新配置
-	externalMCPMgr             *mcp.ExternalMCPManager    // 外部MCP管理器
-	knowledgeToolRegistrar     KnowledgeToolRegistrar     // 知识库工具注册器（可选）
+	agent                      AgentUpdater // Agent接口，用于更新Agent配置
+	externalMCPMgr             *mcp.ExternalMCPManager
 	vulnerabilityToolRegistrar VulnerabilityToolRegistrar // 漏洞工具注册器（可选）
-	webshellToolRegistrar      WebshellToolRegistrar      // WebShell 工具注册器（可选）
 	skillsToolRegistrar        SkillsToolRegistrar        // Skills工具注册器（可选）
-	batchTaskToolRegistrar     BatchTaskToolRegistrar     // 批量任务 MCP 工具（可选）
-	c2ToolRegistrar            C2ToolRegistrar            // C2 MCP 工具（可选）
-	c2Runtime                  C2Runtime                  // C2 启停（可选）
-	retrieverUpdater           RetrieverUpdater           // 检索器更新器（可选）
-	knowledgeInitializer       KnowledgeInitializer       // 知识库初始化器（可选）
-	appUpdater                 AppUpdater                 // App更新器（可选）
-	robotRestarter             RobotRestarter             // 机器人连接重启器（可选），ApplyConfig 时重启钉钉/飞书
-	audit                      *audit.Service
 	db                         *database.DB
 	logger                     *zap.Logger
 	mu                         sync.RWMutex
 	toolGuard                  *toolguard.Manager
-	toolGuardRevision          string                  // protected by mu; advanced only after a successful save
-	lastEmbeddingConfig        *config.EmbeddingConfig // 上一次的嵌入模型配置（用于检测变更）
+	toolGuardRevision          string // protected by mu; advanced only after a successful save
 }
 
 func (h *ConfigHandler) SetDB(db *database.DB) {
 	h.db = db
-}
-
-func (h *ConfigHandler) validateRobotServiceAccounts(robots config.RobotsConfig) error {
-	if h.db == nil {
-		return fmt.Errorf("RBAC 服务不可用，无法校验机器人服务账号")
-	}
-	for platform, userID := range robots.ServiceAccountUserIDs() {
-		user, err := h.db.GetRBACUserByID(userID)
-		if err != nil {
-			return fmt.Errorf("robots.%s.auth.service_user_id 对应用户不存在", platform)
-		}
-		if !user.Enabled {
-			return fmt.Errorf("robots.%s.auth.service_user_id 对应用户已禁用", platform)
-		}
-	}
-	return nil
-}
-
-// AttackChainUpdater 攻击链处理器更新接口
-type AttackChainUpdater interface {
-	UpdateConfig(cfg *config.OpenAIConfig)
 }
 
 // AgentUpdater Agent更新接口
@@ -135,35 +64,16 @@ type AgentUpdater interface {
 }
 
 // NewConfigHandler 创建新的配置处理器
-func NewConfigHandler(configPath string, cfg *config.Config, mcpServer *mcp.Server, executor *security.Executor, agent AgentUpdater, attackChainHandler AttackChainUpdater, externalMCPMgr *mcp.ExternalMCPManager, logger *zap.Logger) *ConfigHandler {
-	// 保存初始的嵌入模型配置（如果知识库已启用）
-	var lastEmbeddingConfig *config.EmbeddingConfig
-	if cfg.Knowledge.Enabled {
-		lastEmbeddingConfig = &config.EmbeddingConfig{
-			Provider: cfg.Knowledge.Embedding.Provider,
-			Model:    cfg.Knowledge.Embedding.Model,
-			BaseURL:  cfg.Knowledge.Embedding.BaseURL,
-			APIKey:   cfg.Knowledge.Embedding.APIKey,
-		}
-	}
+func NewConfigHandler(configPath string, cfg *config.Config, mcpServer *mcp.Server, executor *security.Executor, agent AgentUpdater, externalMCPMgr *mcp.ExternalMCPManager, logger *zap.Logger) *ConfigHandler {
 	return &ConfigHandler{
-		configPath:          configPath,
-		config:              cfg,
-		mcpServer:           mcpServer,
-		executor:            executor,
-		agent:               agent,
-		attackChainHandler:  attackChainHandler,
-		externalMCPMgr:      externalMCPMgr,
-		logger:              logger,
-		lastEmbeddingConfig: lastEmbeddingConfig,
+		configPath:     configPath,
+		config:         cfg,
+		mcpServer:      mcpServer,
+		executor:       executor,
+		agent:          agent,
+		externalMCPMgr: externalMCPMgr,
+		logger:         logger,
 	}
-}
-
-// SetKnowledgeToolRegistrar 设置知识库工具注册器
-func (h *ConfigHandler) SetKnowledgeToolRegistrar(registrar KnowledgeToolRegistrar) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.knowledgeToolRegistrar = registrar
 }
 
 // SetVulnerabilityToolRegistrar 设置漏洞工具注册器
@@ -173,13 +83,6 @@ func (h *ConfigHandler) SetVulnerabilityToolRegistrar(registrar VulnerabilityToo
 	h.vulnerabilityToolRegistrar = registrar
 }
 
-// SetWebshellToolRegistrar 设置 WebShell 工具注册器
-func (h *ConfigHandler) SetWebshellToolRegistrar(registrar WebshellToolRegistrar) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.webshellToolRegistrar = registrar
-}
-
 // SetSkillsToolRegistrar 设置Skills工具注册器
 func (h *ConfigHandler) SetSkillsToolRegistrar(registrar SkillsToolRegistrar) {
 	h.mu.Lock()
@@ -187,98 +90,14 @@ func (h *ConfigHandler) SetSkillsToolRegistrar(registrar SkillsToolRegistrar) {
 	h.skillsToolRegistrar = registrar
 }
 
-// SetBatchTaskToolRegistrar 设置批量任务 MCP 工具注册器
-func (h *ConfigHandler) SetBatchTaskToolRegistrar(registrar BatchTaskToolRegistrar) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.batchTaskToolRegistrar = registrar
-}
-
-// SetC2ToolRegistrar 设置 C2 MCP 工具注册器
-func (h *ConfigHandler) SetC2ToolRegistrar(registrar C2ToolRegistrar) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.c2ToolRegistrar = registrar
-}
-
-// SetC2Runtime 设置 C2 运行时（Apply 时启停）
-func (h *ConfigHandler) SetC2Runtime(rt C2Runtime) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.c2Runtime = rt
-}
-
-// SetRetrieverUpdater 设置检索器更新器
-func (h *ConfigHandler) SetRetrieverUpdater(updater RetrieverUpdater) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.retrieverUpdater = updater
-}
-
-// SetKnowledgeInitializer 设置知识库初始化器
-func (h *ConfigHandler) SetKnowledgeInitializer(initializer KnowledgeInitializer) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.knowledgeInitializer = initializer
-}
-
-// SetAppUpdater 设置App更新器
-func (h *ConfigHandler) SetAppUpdater(updater AppUpdater) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.appUpdater = updater
-}
-
-// SetRobotRestarter 设置机器人连接重启器（ApplyConfig 时用于重启钉钉/飞书长连接）
-func (h *ConfigHandler) SetRobotRestarter(restarter RobotRestarter) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.robotRestarter = restarter
-}
-
-// SetAudit wires platform audit logging.
-func (h *ConfigHandler) SetAudit(s *audit.Service) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.audit = s
-}
-
-// ApplyWechatRobotBinding 微信 iLink 扫码绑定成功后写入配置并重启机器人连接
-func (h *ConfigHandler) ApplyWechatRobotBinding(wc config.RobotWechatConfig) error {
-	h.mu.Lock()
-	wc.Enabled = true
-	h.config.Robots.Wechat = wc
-	h.mu.Unlock()
-	if err := h.saveConfig(); err != nil {
-		return err
-	}
-	if h.robotRestarter != nil {
-		h.robotRestarter.RestartRobotConnections()
-	}
-	h.logger.Info("微信机器人绑定已保存",
-		zap.String("ilink_bot_id", wc.ILinkBotID),
-		zap.Bool("enabled", wc.Enabled),
-	)
-	return nil
-}
-
 // GetConfigResponse 获取配置响应
 type GetConfigResponse struct {
-	AI         config.AIConfig          `json:"ai"`
-	OpenAI     config.OpenAIConfig      `json:"openai"`
-	Vision     config.VisionConfig      `json:"vision"`
-	FOFA       config.FofaConfig        `json:"fofa"`
-	ZoomEye    config.SpaceSearchConfig `json:"zoomeye"`
-	Quake      config.SpaceSearchConfig `json:"quake"`
-	Shodan     config.SpaceSearchConfig `json:"shodan"`
-	MCP        config.MCPConfig         `json:"mcp"`
-	Tools      []ToolConfigInfo         `json:"tools"`
-	Agent      config.AgentConfig       `json:"agent"`
-	Hitl       config.HitlConfig        `json:"hitl,omitempty"`
-	Knowledge  config.KnowledgeConfig   `json:"knowledge"`
-	Robots     config.RobotsConfig      `json:"robots,omitempty"`
-	MultiAgent config.MultiAgentPublic  `json:"multi_agent,omitempty"`
-	C2         config.C2Public          `json:"c2"`
+	AI         config.AIConfig         `json:"ai"`
+	OpenAI     config.OpenAIConfig     `json:"openai"`
+	MCP        config.MCPConfig        `json:"mcp"`
+	Tools      []ToolConfigInfo        `json:"tools"`
+	Agent      config.AgentConfig      `json:"agent"`
+	MultiAgent config.MultiAgentPublic `json:"multi_agent,omitempty"`
 }
 
 // ToolConfigInfo 工具配置信息
@@ -339,24 +158,8 @@ func (h *ConfigHandler) GetConfig(c *gin.Context) {
 		}
 	}
 
-	subAgentCount := len(h.config.MultiAgent.SubAgents)
-	agentsDir := strings.TrimSpace(h.config.AgentsDir)
-	if agentsDir == "" {
-		agentsDir = "agents"
-	}
-	if !filepath.IsAbs(agentsDir) {
-		agentsDir = filepath.Join(filepath.Dir(h.configPath), agentsDir)
-	}
-	if load, err := agents.LoadMarkdownAgentsDir(agentsDir); err == nil {
-		subAgentCount = len(agents.MergeYAMLAndMarkdown(h.config.MultiAgent.SubAgents, load.SubAgents))
-	}
 	multiPub := config.MultiAgentPublic{
 		Enabled:                               h.config.MultiAgent.Enabled,
-		RobotDefaultAgentMode:                 config.NormalizeRobotAgentMode(h.config.MultiAgent),
-		BatchUseMultiAgent:                    h.config.MultiAgent.BatchUseMultiAgent,
-		SubAgentCount:                         subAgentCount,
-		Orchestration:                         config.NormalizeMultiAgentOrchestration(h.config.MultiAgent.Orchestration),
-		PlanExecuteLoopMaxIterations:          h.config.MultiAgent.PlanExecuteLoopMaxIterations,
 		SummarizationUserIntentLedgerMaxRunes: h.config.MultiAgent.EinoMiddleware.SummarizationUserIntentLedgerMaxRunesEffective(),
 		SummarizationUserIntentLedgerEntryMaxRunes: h.config.MultiAgent.EinoMiddleware.SummarizationUserIntentLedgerEntryMaxRunesEffective(),
 		LatestUserMessageMaxRunes:                  h.config.MultiAgent.EinoMiddleware.LatestUserMessageMaxRunesEffective(),
@@ -376,18 +179,9 @@ func (h *ConfigHandler) GetConfig(c *gin.Context) {
 	response, err := maskedConfigResponse(GetConfigResponse{
 		AI:         h.config.AI,
 		OpenAI:     h.config.OpenAI,
-		Vision:     h.config.Vision,
-		FOFA:       h.config.FOFA,
-		ZoomEye:    h.config.ZoomEye,
-		Quake:      h.config.Quake,
-		Shodan:     h.config.Shodan,
 		MCP:        h.config.MCP,
 		Tools:      tools,
 		Agent:      h.config.Agent,
-		Hitl:       h.config.Hitl,
-		Knowledge:  h.config.Knowledge,
-		C2:         h.config.C2.Public(),
-		Robots:     h.config.Robots,
 		MultiAgent: multiPub,
 	})
 	if err != nil {
@@ -725,20 +519,10 @@ func (h *ConfigHandler) GetTools(c *gin.Context) {
 type UpdateConfigRequest struct {
 	AI         *config.AIConfig            `json:"ai,omitempty"`
 	OpenAI     *config.OpenAIConfig        `json:"openai,omitempty"`
-	Vision     *config.VisionConfig        `json:"vision,omitempty"`
-	FOFA       *config.FofaConfig          `json:"fofa,omitempty"`
-	ZoomEye    *config.SpaceSearchConfig   `json:"zoomeye,omitempty"`
-	Quake      *config.SpaceSearchConfig   `json:"quake,omitempty"`
-	Shodan     *config.SpaceSearchConfig   `json:"shodan,omitempty"`
 	MCP        *config.MCPConfig           `json:"mcp,omitempty"`
 	Tools      []ToolEnableStatus          `json:"tools,omitempty"`
 	Agent      *AgentConfigUpdate          `json:"agent,omitempty"`
-	Hitl       *config.HitlConfig          `json:"hitl,omitempty"`
-	Knowledge  *config.KnowledgeConfig     `json:"knowledge,omitempty"`
-	Robots     *config.RobotsConfig        `json:"robots,omitempty"`
 	MultiAgent *config.MultiAgentAPIUpdate `json:"multi_agent,omitempty"`
-	C2         *config.C2APIUpdate         `json:"c2,omitempty"`
-	Storage    *config.StorageConfig       `json:"storage,omitempty"`
 }
 
 // AgentConfigUpdate 用于 PATCH /api/config 的 agent 段：仅 JSON 中出现的字段（指针非 nil）覆盖内存配置。
@@ -828,33 +612,6 @@ func (h *ConfigHandler) UpdateConfig(c *gin.Context) {
 		)
 	}
 
-	if req.Vision != nil {
-		h.config.Vision = *req.Vision
-		h.logger.Info("更新 Vision 配置",
-			zap.Bool("enabled", h.config.Vision.Enabled),
-			zap.String("model", h.config.Vision.Model),
-		)
-	}
-
-	// 更新FOFA配置
-	if req.FOFA != nil {
-		h.config.FOFA = *req.FOFA
-		h.logger.Info("更新FOFA配置", zap.String("base_url", h.config.FOFA.BaseURL))
-	}
-	if req.ZoomEye != nil {
-		h.config.ZoomEye = *req.ZoomEye
-		h.logger.Info("更新ZoomEye配置", zap.String("base_url", h.config.ZoomEye.BaseURL))
-	}
-	if req.Quake != nil {
-		h.config.Quake = *req.Quake
-		h.logger.Info("更新Quake配置", zap.String("base_url", h.config.Quake.BaseURL))
-	}
-	if req.Shodan != nil {
-		h.config.Shodan = *req.Shodan
-		h.logger.Info("更新Shodan配置", zap.String("base_url", h.config.Shodan.BaseURL))
-	}
-
-	// 更新MCP配置
 	if req.MCP != nil {
 		h.config.MCP = *req.MCP
 		h.logger.Info("更新MCP配置",
@@ -902,160 +659,9 @@ func (h *ConfigHandler) UpdateConfig(c *gin.Context) {
 		}
 	}
 
-	if req.Hitl != nil {
-		h.config.Hitl.AuditBackend = req.Hitl.EffectiveAuditBackend()
-		h.config.Hitl.AuditModel = req.Hitl.AuditModel
-		h.config.Hitl.ToolWhitelist = mergeHitlToolWhitelistSlice(nil, req.Hitl.ToolWhitelist)
-		if strings.TrimSpace(req.Hitl.DefaultMode) != "" {
-			h.config.Hitl.DefaultMode = req.Hitl.EffectiveDefaultMode()
-		}
-		h.config.Hitl.DefaultReviewer = req.Hitl.EffectiveDefaultReviewer()
-		if req.Hitl.DefaultTimeoutSeconds != nil {
-			v := req.Hitl.EffectiveDefaultTimeoutSeconds()
-			h.config.Hitl.DefaultTimeoutSeconds = &v
-		}
-		h.config.Hitl.AuditAgentPrompt = strings.TrimSpace(req.Hitl.AuditAgentPrompt)
-		h.config.Hitl.AuditAgentPromptReviewEdit = strings.TrimSpace(req.Hitl.AuditAgentPromptReviewEdit)
-		if req.Hitl.RetentionDays != nil {
-			v := *req.Hitl.RetentionDays
-			if v < 0 {
-				v = 0
-			}
-			h.config.Hitl.RetentionDays = &v
-		}
-		h.logger.Info("更新HITL配置",
-			zap.String("audit_backend", h.config.Hitl.AuditBackend),
-			zap.String("default_reviewer", h.config.Hitl.DefaultReviewer),
-			zap.Int("tool_whitelist", len(h.config.Hitl.ToolWhitelist)),
-		)
-	}
-
-	if req.Storage != nil {
-		st := &h.config.Storage
-		if req.Storage.AutoClean != nil {
-			v := *req.Storage.AutoClean
-			st.AutoClean = &v
-		}
-		if req.Storage.IntervalMinutes != nil {
-			v := *req.Storage.IntervalMinutes
-			if v < 5 {
-				v = 5
-			}
-			st.IntervalMinutes = &v
-		}
-		if req.Storage.OrphanGraceDays != nil {
-			v := *req.Storage.OrphanGraceDays
-			if v < 0 {
-				v = 0
-			}
-			st.OrphanGraceDays = &v
-		}
-		if req.Storage.ActiveGraceHours != nil {
-			v := *req.Storage.ActiveGraceHours
-			if v < 1 {
-				v = 1
-			}
-			st.ActiveGraceHours = &v
-		}
-		if req.Storage.Categories != nil {
-			if st.Categories == nil {
-				st.Categories = make(map[string]config.StorageCategoryConfig, len(req.Storage.Categories))
-			}
-			// 只接受注册表内的类别键，未注册的键直接忽略，避免被写进 config.yaml。
-			for _, key := range config.StorageCategoryOrder {
-				patch, ok := req.Storage.Categories[key]
-				if !ok {
-					continue
-				}
-				cur := st.Categories[key]
-				if patch.Enabled != nil {
-					v := *patch.Enabled
-					cur.Enabled = &v
-				}
-				if patch.RetentionDays != nil {
-					v := *patch.RetentionDays
-					if v < 0 {
-						v = 0
-					}
-					cur.RetentionDays = &v
-				}
-				st.Categories[key] = cur
-			}
-		}
-		h.logger.Info("更新运行空间清理配置",
-			zap.Bool("auto_clean", st.AutoCleanEffective()),
-			zap.Int("interval_minutes", st.IntervalMinutesEffective()),
-			zap.Int("orphan_grace_days", st.OrphanGraceDaysEffective()),
-			zap.Int("active_grace_hours", st.ActiveGraceHoursEffective()),
-		)
-	}
-
-	// 更新Knowledge配置
-	if req.Knowledge != nil {
-		// 保存旧的嵌入模型配置（用于检测变更）
-		if h.config.Knowledge.Enabled {
-			h.lastEmbeddingConfig = &config.EmbeddingConfig{
-				Provider: h.config.Knowledge.Embedding.Provider,
-				Model:    h.config.Knowledge.Embedding.Model,
-				BaseURL:  h.config.Knowledge.Embedding.BaseURL,
-				APIKey:   h.config.Knowledge.Embedding.APIKey,
-			}
-		}
-		h.config.Knowledge = *req.Knowledge
-		h.logger.Info("更新Knowledge配置",
-			zap.Bool("enabled", h.config.Knowledge.Enabled),
-			zap.String("base_path", h.config.Knowledge.BasePath),
-			zap.String("embedding_model", h.config.Knowledge.Embedding.Model),
-			zap.Int("retrieval_top_k", h.config.Knowledge.Retrieval.TopK),
-			zap.Float64("similarity_threshold", h.config.Knowledge.Retrieval.SimilarityThreshold),
-		)
-	}
-
-	// 更新机器人配置
-	if req.Robots != nil {
-		if err := config.ValidateWecomConfig(req.Robots.Wecom); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		if err := config.ValidateRobotsAuthorization(*req.Robots); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		if err := h.validateRobotServiceAccounts(*req.Robots); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		h.config.Robots = *req.Robots
-		h.logger.Info("更新机器人配置",
-			zap.Bool("wechat_enabled", h.config.Robots.Wechat.Enabled),
-			zap.Bool("wecom_enabled", h.config.Robots.Wecom.Enabled),
-			zap.Bool("dingtalk_enabled", h.config.Robots.Dingtalk.Enabled),
-			zap.Bool("lark_enabled", h.config.Robots.Lark.Enabled),
-			zap.Bool("telegram_enabled", h.config.Robots.Telegram.Enabled),
-			zap.Bool("slack_enabled", h.config.Robots.Slack.Enabled),
-			zap.Bool("discord_enabled", h.config.Robots.Discord.Enabled),
-			zap.Bool("qq_enabled", h.config.Robots.QQ.Enabled),
-		)
-	}
-
-	if req.C2 != nil {
-		v := req.C2.Enabled
-		h.config.C2.Enabled = &v
-		h.logger.Info("更新C2配置", zap.Bool("enabled", v))
-	}
-
 	// 多代理标量（sub_agents 等仍由 config.yaml 维护）
 	if req.MultiAgent != nil {
 		h.config.MultiAgent.Enabled = req.MultiAgent.Enabled
-		h.config.MultiAgent.BatchUseMultiAgent = req.MultiAgent.BatchUseMultiAgent
-		if mode := strings.TrimSpace(req.MultiAgent.RobotDefaultAgentMode); mode != "" {
-			h.config.MultiAgent.RobotDefaultAgentMode = mode
-		} else {
-			h.config.MultiAgent.RobotDefaultAgentMode = "eino_single"
-		}
-		if req.MultiAgent.PlanExecuteLoopMaxIterations != nil {
-			h.config.MultiAgent.PlanExecuteLoopMaxIterations = *req.MultiAgent.PlanExecuteLoopMaxIterations
-		}
 		if req.MultiAgent.SummarizationUserIntentLedgerMaxRunes != nil {
 			v := *req.MultiAgent.SummarizationUserIntentLedgerMaxRunes
 			if v < 0 {
@@ -1120,9 +726,6 @@ func (h *ConfigHandler) UpdateConfig(c *gin.Context) {
 		}
 		h.logger.Info("更新多代理配置",
 			zap.Bool("enabled", h.config.MultiAgent.Enabled),
-			zap.String("robot_default_agent_mode", config.NormalizeRobotAgentMode(h.config.MultiAgent)),
-			zap.Bool("batch_use_multi_agent", h.config.MultiAgent.BatchUseMultiAgent),
-			zap.Int("plan_execute_loop_max_iterations", h.config.MultiAgent.PlanExecuteLoopMaxIterations),
 			zap.Int("summarization_user_intent_ledger_max_runes", h.config.MultiAgent.EinoMiddleware.SummarizationUserIntentLedgerMaxRunesEffective()),
 			zap.Int("summarization_user_intent_ledger_entry_max_runes", h.config.MultiAgent.EinoMiddleware.SummarizationUserIntentLedgerEntryMaxRunesEffective()),
 			zap.Int("latest_user_message_max_runes", h.config.MultiAgent.EinoMiddleware.LatestUserMessageMaxRunesEffective()),
@@ -1254,9 +857,6 @@ func (h *ConfigHandler) UpdateConfig(c *gin.Context) {
 		return
 	}
 
-	if h.audit != nil {
-		h.audit.RecordOK(c, "config", "update", "更新内存配置", "config", "", nil)
-	}
 	c.JSON(http.StatusOK, gin.H{"message": "配置已更新"})
 }
 
@@ -1554,213 +1154,15 @@ func (h *ConfigHandler) ListModels(c *gin.Context) {
 	})
 }
 
-// TestVisionRequest 测试 Vision 模型连接；vision.api_key/base_url 留空时可传 openai 段作回退。
-type TestVisionRequest struct {
-	ChannelID string              `json:"channel_id,omitempty"`
-	Vision    config.VisionConfig `json:"vision"`
-	OpenAI    config.OpenAIConfig `json:"openai,omitempty"`
-}
-
-// TestVision 测试视觉模型 API 连接（最小 chat completion）。
-func (h *ConfigHandler) TestVision(c *gin.Context) {
-	var req TestVisionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求参数: " + err.Error()})
-		return
-	}
-	mainKey, mainErr := h.resolveProbeSecret(req.OpenAI.APIKey, req.ChannelID, req.OpenAI.BaseURL, "openai")
-	if mainErr != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": mainErr.Error()})
-		return
-	}
-	req.OpenAI.APIKey = mainKey
-	h.mu.RLock()
-	restoreErr := restoreConfigRequestSecrets(&req, h.config)
-	h.mu.RUnlock()
-	if restoreErr != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": restoreErr.Error()})
-		return
-	}
-	oa := req.Vision.OpenAICfgEffective(req.OpenAI)
-	if strings.TrimSpace(oa.APIKey) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "API Key 不能为空（可填写 vision.api_key 或 openai.api_key）"})
-		return
-	}
-	if strings.TrimSpace(oa.Model) == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "视觉模型不能为空"})
-		return
-	}
-
-	baseURL := strings.TrimSuffix(strings.TrimSpace(oa.BaseURL), "/")
-	if baseURL == "" {
-		if strings.EqualFold(strings.TrimSpace(oa.Provider), "claude") {
-			baseURL = "https://api.anthropic.com"
-		} else {
-			baseURL = "https://api.openai.com/v1"
-		}
-	}
-
-	payload := map[string]interface{}{
-		"model": oa.Model,
-		"messages": []map[string]string{
-			{"role": "user", "content": "Hi"},
-		},
-		"max_completion_tokens": 5,
-	}
-
-	tmpCfg := &config.OpenAIConfig{
-		Provider: oa.Provider,
-		BaseURL:  baseURL,
-		APIKey:   strings.TrimSpace(oa.APIKey),
-		Model:    oa.Model,
-	}
-	client := openai.NewClient(tmpCfg, nil, h.logger)
-
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
-	defer cancel()
-
-	start := time.Now()
-	var chatResp struct {
-		Model   string `json:"model"`
-		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-		} `json:"choices"`
-	}
-	err := client.ChatCompletion(ctx, payload, &chatResp)
-	latency := time.Since(start)
-
-	if err != nil {
-		if apiErr, ok := err.(*openai.APIError); ok {
-			c.JSON(http.StatusOK, gin.H{
-				"success":     false,
-				"error":       fmt.Sprintf("API 返回错误 (HTTP %d): %s", apiErr.StatusCode, apiErr.Body),
-				"status_code": apiErr.StatusCode,
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"error":   "连接失败: " + err.Error(),
-		})
-		return
-	}
-	if len(chatResp.Choices) == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"error":   "API 响应缺少 choices 字段，请检查 Base URL 与视觉模型名称",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"success":    true,
-		"model":      chatResp.Model,
-		"latency_ms": latency.Milliseconds(),
-	})
-}
-
 // ApplyConfig 应用配置（重新加载并重启相关服务）
 func (h *ConfigHandler) ApplyConfig(c *gin.Context) {
-	// 先检查是否需要动态初始化知识库（在锁外执行，避免阻塞其他请求）
-	var needInitKnowledge bool
-	var knowledgeInitializer KnowledgeInitializer
-
-	h.mu.RLock()
-	needInitKnowledge = h.config.Knowledge.Enabled && h.knowledgeToolRegistrar == nil && h.knowledgeInitializer != nil
-	if needInitKnowledge {
-		knowledgeInitializer = h.knowledgeInitializer
-	}
-	h.mu.RUnlock()
-
-	// 如果需要动态初始化知识库，在锁外执行（这是耗时操作）
-	if needInitKnowledge {
-		h.logger.Info("检测到知识库从禁用变为启用，开始动态初始化知识库组件")
-		if _, err := knowledgeInitializer(); err != nil {
-			h.logger.Error("动态初始化知识库失败", zap.Error(err))
-			if h.audit != nil {
-				h.audit.RecordFail(c, "config", "apply", "应用配置失败：初始化知识库", map[string]interface{}{"error": err.Error()})
-			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "初始化知识库失败: " + err.Error()})
-			return
-		}
-		h.logger.Debug("知识库动态初始化完成，工具已注册")
-	}
-
-	// 检查嵌入模型配置是否变更（需要在锁外执行，避免阻塞）
-	var needReinitKnowledge bool
-	var reinitKnowledgeInitializer KnowledgeInitializer
-	h.mu.RLock()
-	if h.config.Knowledge.Enabled && h.knowledgeInitializer != nil && h.lastEmbeddingConfig != nil {
-		// 检查嵌入模型配置是否变更
-		currentEmbedding := h.config.Knowledge.Embedding
-		if currentEmbedding.Provider != h.lastEmbeddingConfig.Provider ||
-			currentEmbedding.Model != h.lastEmbeddingConfig.Model ||
-			currentEmbedding.BaseURL != h.lastEmbeddingConfig.BaseURL ||
-			currentEmbedding.APIKey != h.lastEmbeddingConfig.APIKey {
-			needReinitKnowledge = true
-			reinitKnowledgeInitializer = h.knowledgeInitializer
-			h.logger.Info("检测到嵌入模型配置变更，需要重新初始化知识库组件",
-				zap.String("old_model", h.lastEmbeddingConfig.Model),
-				zap.String("new_model", currentEmbedding.Model),
-				zap.String("old_base_url", h.lastEmbeddingConfig.BaseURL),
-				zap.String("new_base_url", currentEmbedding.BaseURL),
-			)
-		}
-	}
-	h.mu.RUnlock()
-
-	// 如果需要重新初始化知识库（嵌入模型配置变更），在锁外执行
-	if needReinitKnowledge {
-		h.logger.Info("开始重新初始化知识库组件（嵌入模型配置已变更）")
-		if _, err := reinitKnowledgeInitializer(); err != nil {
-			h.logger.Error("重新初始化知识库失败", zap.Error(err))
-			if h.audit != nil {
-				h.audit.RecordFail(c, "config", "apply", "应用配置失败：重新初始化知识库", map[string]interface{}{"error": err.Error()})
-			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "重新初始化知识库失败: " + err.Error()})
-			return
-		}
-		h.logger.Info("知识库组件重新初始化完成")
-	}
-
-	// C2：在 ClearTools 之前按配置启停（随后由 c2ToolRegistrar 注册 MCP 工具）
-	h.mu.RLock()
-	c2Rt := h.c2Runtime
-	h.mu.RUnlock()
-	if c2Rt != nil {
-		if err := c2Rt.ReconcileC2AfterConfigApply(); err != nil {
-			h.logger.Error("C2 配置应用失败", zap.Error(err))
-			if h.audit != nil {
-				h.audit.RecordFail(c, "config", "apply", "应用配置失败：C2", map[string]interface{}{"error": err.Error()})
-			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "C2 启动失败: " + err.Error()})
-			return
-		}
-	}
-
 	// 现在获取写锁，执行快速的操作
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	// 如果重新初始化了知识库，更新嵌入模型配置记录
-	if needReinitKnowledge && h.config.Knowledge.Enabled {
-		h.lastEmbeddingConfig = &config.EmbeddingConfig{
-			Provider: h.config.Knowledge.Embedding.Provider,
-			Model:    h.config.Knowledge.Embedding.Model,
-			BaseURL:  h.config.Knowledge.Embedding.BaseURL,
-			APIKey:   h.config.Knowledge.Embedding.APIKey,
-		}
-		h.logger.Info("已更新嵌入模型配置记录")
-	}
-
 	// 从 tools 目录重新加载工具配置（新增/修改/删除 yaml 后无需重启）
 	if err := config.ReloadSecurityToolsFromDir(h.config, h.configPath); err != nil {
 		h.logger.Error("重新加载工具配置失败", zap.Error(err))
-		if h.audit != nil {
-			h.audit.RecordFail(c, "config", "apply", "应用配置失败：重新加载工具", map[string]interface{}{"error": err.Error()})
-		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "重新加载工具配置失败: " + err.Error()})
 		return
 	}
@@ -1788,16 +1190,6 @@ func (h *ConfigHandler) ApplyConfig(c *gin.Context) {
 		}
 	}
 
-	// 重新注册 WebShell 工具（内置工具，必须注册）
-	if h.webshellToolRegistrar != nil {
-		h.logger.Info("重新注册 WebShell 工具")
-		if err := h.webshellToolRegistrar(); err != nil {
-			h.logger.Error("重新注册 WebShell 工具失败", zap.Error(err))
-		} else {
-			h.logger.Info("WebShell 工具已重新注册")
-		}
-	}
-
 	// 重新注册Skills工具（内置工具，必须注册）
 	if h.skillsToolRegistrar != nil {
 		h.logger.Info("重新注册Skills工具")
@@ -1805,36 +1197,6 @@ func (h *ConfigHandler) ApplyConfig(c *gin.Context) {
 			h.logger.Error("重新注册Skills工具失败", zap.Error(err))
 		} else {
 			h.logger.Info("Skills工具已重新注册")
-		}
-	}
-
-	// 重新注册批量任务 MCP 工具
-	if h.batchTaskToolRegistrar != nil {
-		h.logger.Info("重新注册批量任务 MCP 工具")
-		if err := h.batchTaskToolRegistrar(); err != nil {
-			h.logger.Error("重新注册批量任务 MCP 工具失败", zap.Error(err))
-		} else {
-			h.logger.Info("批量任务 MCP 工具已重新注册")
-		}
-	}
-
-	// 重新注册 C2 MCP 工具（仅当 C2 已启动）
-	if h.c2ToolRegistrar != nil {
-		h.logger.Info("重新注册 C2 MCP 工具")
-		if err := h.c2ToolRegistrar(); err != nil {
-			h.logger.Error("重新注册 C2 MCP 工具失败", zap.Error(err))
-		} else {
-			h.logger.Info("C2 MCP 工具已处理")
-		}
-	}
-
-	// 如果知识库启用，重新注册知识库工具
-	if h.config.Knowledge.Enabled && h.knowledgeToolRegistrar != nil {
-		h.logger.Info("重新注册知识库工具")
-		if err := h.knowledgeToolRegistrar(); err != nil {
-			h.logger.Error("重新注册知识库工具失败", zap.Error(err))
-		} else {
-			h.logger.Info("知识库工具已重新注册")
 		}
 	}
 
@@ -1867,81 +1229,14 @@ func (h *ConfigHandler) ApplyConfig(c *gin.Context) {
 		})
 	}
 
-	// 更新AttackChainHandler的OpenAI配置
-	if h.attackChainHandler != nil {
-		h.attackChainHandler.UpdateConfig(&h.config.OpenAI)
-		h.logger.Info("AttackChainHandler配置已更新")
-	}
-
-	// 更新检索器配置（如果知识库启用）
-	if h.config.Knowledge.Enabled && h.retrieverUpdater != nil {
-		retrievalConfig := knowledge.RetrievalConfigFromYAML(h.config.Knowledge.Retrieval)
-		h.retrieverUpdater.UpdateConfig(retrievalConfig)
-		h.logger.Info("检索器配置已更新",
-			zap.Int("top_k", retrievalConfig.TopK),
-			zap.Float64("similarity_threshold", retrievalConfig.SimilarityThreshold),
-		)
-	}
-
-	// 更新嵌入模型配置记录（如果知识库启用）
-	if h.config.Knowledge.Enabled {
-		h.lastEmbeddingConfig = &config.EmbeddingConfig{
-			Provider: h.config.Knowledge.Embedding.Provider,
-			Model:    h.config.Knowledge.Embedding.Model,
-			BaseURL:  h.config.Knowledge.Embedding.BaseURL,
-			APIKey:   h.config.Knowledge.Embedding.APIKey,
-		}
-	}
-
-	// 重启钉钉/飞书长连接，使前端修改的机器人配置立即生效（无需重启服务）
-	if h.robotRestarter != nil {
-		h.robotRestarter.RestartRobotConnections()
-		h.logger.Info("已触发机器人连接重启（钉钉/飞书）")
-	}
-
 	h.logger.Info("配置已应用",
 		zap.Int("tools_count", len(h.config.Security.Tools)),
 	)
-
-	if h.audit != nil {
-		h.audit.Record(c, audit.Entry{
-			Category: "config",
-			Action:   "apply",
-			Result:   "success",
-			Message:  "配置已应用",
-			Detail: map[string]interface{}{
-				"tools_count":       len(h.config.Security.Tools),
-				"knowledge_enabled": h.config.Knowledge.Enabled,
-				"c2_enabled":        h.config.C2.EnabledEffective(),
-			},
-		})
-	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message":     "配置已应用",
 		"tools_count": len(h.config.Security.Tools),
 	})
-}
-
-// SetUpdateSource 记录一键更新的更新源（单个仓库地址；空 = 回到官方仓库）。
-// 走与其他设置相同的写入路径：备份旧文件、按 YAML 文档只改 update 段、原子落盘。
-func (h *ConfigHandler) SetUpdateSource(repo string) error {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	previous := h.config.Update
-	h.config.Update = config.UpdateConfig{Repo: strings.TrimSpace(repo)}
-	if err := h.saveConfig(); err != nil {
-		h.config.Update = previous
-		return err
-	}
-	return nil
-}
-
-// UpdateSource 读当前配置的更新源地址（加读锁；更新处理器每次请求现读，保存后立即生效）。
-func (h *ConfigHandler) UpdateSource() string {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-	return h.config.Update.Repo
 }
 
 // saveConfig 保存配置到文件
@@ -1969,17 +1264,6 @@ func (h *ConfigHandler) saveConfig() error {
 	updateMCPConfig(root, h.config.MCP)
 	updateAIConfig(root, h.config.AI)
 	removeKeyFromMap(root.Content[0], "openai")
-	updateVisionConfig(root, h.config.Vision)
-	updateUpdateSourceConfig(root, h.config.Update)
-	updateFOFAConfig(root, h.config.FOFA)
-	updateSpaceSearchConfig(root, "zoomeye", h.config.ZoomEye)
-	updateSpaceSearchConfig(root, "quake", h.config.Quake)
-	updateSpaceSearchConfig(root, "shodan", h.config.Shodan)
-	updateKnowledgeConfig(root, h.config.Knowledge)
-	updateC2Config(root, h.config.C2)
-	updateRobotsConfig(root, h.config.Robots)
-	updateHitlConfig(root, h.config.Hitl)
-	updateStorageConfig(root, h.config.Storage)
 	updateMultiAgentConfig(root, h.config.MultiAgent)
 	// 更新外部MCP配置（使用external_mcp.go中的函数，同一包中可直接调用）
 	updateExternalMCPConfig(root, h.config.ExternalMCP)
@@ -2098,59 +1382,6 @@ func updateMCPConfig(doc *yaml.Node, cfg config.MCPConfig) {
 	setIntInMap(mcpNode, "port", cfg.Port)
 }
 
-// updateUpdateSourceConfig 写入一键更新的更新源（update 段的单个 repo 字段）。
-// 留空时把整段删掉，而不是留下一个空的 update: 块——"没有配置"应当就是文件里没有这一段，
-// 运行时按官方仓库处理。
-func updateUpdateSourceConfig(doc *yaml.Node, cfg config.UpdateConfig) {
-	root := doc.Content[0]
-	repo := strings.TrimSpace(cfg.Repo)
-	if repo == "" {
-		removeKeyFromMap(root, "update")
-		return
-	}
-	node := ensureMap(root, "update")
-	setStringInMap(node, "repo", repo)
-}
-
-func updateVisionConfig(doc *yaml.Node, cfg config.VisionConfig) {
-	root := doc.Content[0]
-	visionNode := ensureMap(root, "vision")
-	setBoolInMap(visionNode, "enabled", cfg.Enabled)
-	if strings.TrimSpace(cfg.APIKey) != "" {
-		setStringInMap(visionNode, "api_key", cfg.APIKey)
-	} else {
-		setStringInMap(visionNode, "api_key", "")
-	}
-	if strings.TrimSpace(cfg.BaseURL) != "" {
-		setStringInMap(visionNode, "base_url", cfg.BaseURL)
-	} else {
-		setStringInMap(visionNode, "base_url", "")
-	}
-	setStringInMap(visionNode, "model", cfg.Model)
-	if strings.TrimSpace(cfg.Provider) != "" {
-		setStringInMap(visionNode, "provider", cfg.Provider)
-	}
-	if cfg.TimeoutSeconds > 0 {
-		setIntInMap(visionNode, "timeout_seconds", cfg.TimeoutSeconds)
-	}
-	if cfg.MaxImageBytes > 0 {
-		setIntInMap(visionNode, "max_image_bytes", int(cfg.MaxImageBytes))
-	}
-	if cfg.MaxDimension > 0 {
-		setIntInMap(visionNode, "max_dimension", cfg.MaxDimension)
-	}
-	if cfg.JPEGQuality > 0 {
-		setIntInMap(visionNode, "jpeg_quality", cfg.JPEGQuality)
-	}
-	if cfg.MaxPayloadBytes > 0 {
-		setIntInMap(visionNode, "max_payload_bytes", int(cfg.MaxPayloadBytes))
-	}
-	setIntInMap(visionNode, "skip_preprocess_below_bytes", int(cfg.SkipPreprocessBelowBytes))
-	if strings.TrimSpace(cfg.Detail) != "" {
-		setStringInMap(visionNode, "detail", cfg.Detail)
-	}
-}
-
 func updateOpenAIConfig(doc *yaml.Node, cfg config.OpenAIConfig) {
 	root := doc.Content[0]
 	openaiNode := ensureMap(root, "openai")
@@ -2243,279 +1474,10 @@ func updateAIConfig(doc *yaml.Node, cfg config.AIConfig) {
 	}
 }
 
-func updateFOFAConfig(doc *yaml.Node, cfg config.FofaConfig) {
-	root := doc.Content[0]
-	fofaNode := ensureMap(root, "fofa")
-	setStringInMap(fofaNode, "base_url", cfg.BaseURL)
-	removeKeyFromMap(fofaNode, "email")
-	setStringInMap(fofaNode, "api_key", cfg.APIKey)
-}
-
-func updateSpaceSearchConfig(doc *yaml.Node, key string, cfg config.SpaceSearchConfig) {
-	root := doc.Content[0]
-	node := ensureMap(root, key)
-	setStringInMap(node, "base_url", cfg.BaseURL)
-	setStringInMap(node, "api_key", cfg.APIKey)
-}
-
-func updateKnowledgeConfig(doc *yaml.Node, cfg config.KnowledgeConfig) {
-	root := doc.Content[0]
-	knowledgeNode := ensureMap(root, "knowledge")
-	setBoolInMap(knowledgeNode, "enabled", cfg.Enabled)
-	setStringInMap(knowledgeNode, "base_path", cfg.BasePath)
-
-	// 更新嵌入配置
-	embeddingNode := ensureMap(knowledgeNode, "embedding")
-	setStringInMap(embeddingNode, "provider", cfg.Embedding.Provider)
-	setStringInMap(embeddingNode, "model", cfg.Embedding.Model)
-	if cfg.Embedding.BaseURL != "" {
-		setStringInMap(embeddingNode, "base_url", cfg.Embedding.BaseURL)
-	}
-	if cfg.Embedding.APIKey != "" {
-		setStringInMap(embeddingNode, "api_key", cfg.Embedding.APIKey)
-	}
-
-	// 更新检索配置
-	retrievalNode := ensureMap(knowledgeNode, "retrieval")
-	setIntInMap(retrievalNode, "top_k", cfg.Retrieval.TopK)
-	setFloatInMap(retrievalNode, "similarity_threshold", cfg.Retrieval.SimilarityThreshold)
-	setStringInMap(retrievalNode, "sub_index_filter", cfg.Retrieval.SubIndexFilter)
-	mqNode := ensureMap(retrievalNode, "multi_query")
-	setIntInMap(mqNode, "max_queries", cfg.Retrieval.MultiQuery.MaxQueries)
-	rerankNode := ensureMap(retrievalNode, "rerank")
-	setStringInMap(rerankNode, "provider", cfg.Retrieval.Rerank.Provider)
-	setStringInMap(rerankNode, "model", cfg.Retrieval.Rerank.Model)
-	setStringInMap(rerankNode, "base_url", cfg.Retrieval.Rerank.BaseURL)
-	setStringInMap(rerankNode, "api_key", cfg.Retrieval.Rerank.APIKey)
-	postNode := ensureMap(retrievalNode, "post_retrieve")
-	setIntInMap(postNode, "prefetch_top_k", cfg.Retrieval.PostRetrieve.PrefetchTopK)
-	setIntInMap(postNode, "max_context_chars", cfg.Retrieval.PostRetrieve.MaxContextChars)
-	setIntInMap(postNode, "max_context_tokens", cfg.Retrieval.PostRetrieve.MaxContextTokens)
-
-	// 更新索引配置
-	indexingNode := ensureMap(knowledgeNode, "indexing")
-	setStringInMap(indexingNode, "chunk_strategy", cfg.Indexing.ChunkStrategy)
-	setIntInMap(indexingNode, "request_timeout_seconds", cfg.Indexing.RequestTimeoutSeconds)
-	setIntInMap(indexingNode, "chunk_size", cfg.Indexing.ChunkSize)
-	setIntInMap(indexingNode, "chunk_overlap", cfg.Indexing.ChunkOverlap)
-	setIntInMap(indexingNode, "max_chunks_per_item", cfg.Indexing.MaxChunksPerItem)
-	setBoolInMap(indexingNode, "prefer_source_file", cfg.Indexing.PreferSourceFile)
-	setIntInMap(indexingNode, "batch_size", cfg.Indexing.BatchSize)
-	setStringSliceInMap(indexingNode, "sub_indexes", cfg.Indexing.SubIndexes)
-	setIntInMap(indexingNode, "max_rpm", cfg.Indexing.MaxRPM)
-	setIntInMap(indexingNode, "rate_limit_delay_ms", cfg.Indexing.RateLimitDelayMs)
-	setIntInMap(indexingNode, "max_retries", cfg.Indexing.MaxRetries)
-	setIntInMap(indexingNode, "retry_delay_ms", cfg.Indexing.RetryDelayMs)
-}
-
-func updateC2Config(doc *yaml.Node, cfg config.C2Config) {
-	root := doc.Content[0]
-	c2Node := ensureMap(root, "c2")
-	setBoolInMap(c2Node, "enabled", cfg.EnabledEffective())
-}
-
-func mergeHitlToolWhitelistSlice(existing, add []string) []string {
-	seen := make(map[string]struct{})
-	out := make([]string, 0, len(existing)+len(add))
-	for _, list := range [][]string{existing, add} {
-		for _, t := range list {
-			n := strings.ToLower(strings.TrimSpace(t))
-			if n == "" {
-				continue
-			}
-			if _, ok := seen[n]; ok {
-				continue
-			}
-			seen[n] = struct{}{}
-			out = append(out, strings.TrimSpace(t))
-		}
-	}
-	return out
-}
-
-// SetHitlToolWhitelist 将全局免审批工具白名单整表写入 config.yaml（替换，非合并）。
-func (h *ConfigHandler) SetHitlToolWhitelist(tools []string) error {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.config.Hitl.ToolWhitelist = mergeHitlToolWhitelistSlice(nil, tools)
-	if err := h.saveConfig(); err != nil {
-		return err
-	}
-	h.logger.Info("HITL 全局工具白名单已写入配置文件",
-		zap.Int("count", len(h.config.Hitl.ToolWhitelist)),
-	)
-	return nil
-}
-
-// MergeHitlToolWhitelistIntoConfig 将会话侧栏提交的免审批工具名合并进内存配置并写入 config.yaml（与全局白名单去重规则一致：小写键、保留首次出现的原始大小写）。
-func (h *ConfigHandler) MergeHitlToolWhitelistIntoConfig(add []string) error {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	merged := mergeHitlToolWhitelistSlice(h.config.Hitl.ToolWhitelist, add)
-	h.config.Hitl.ToolWhitelist = merged
-	if err := h.saveConfig(); err != nil {
-		return err
-	}
-	h.logger.Info("HITL 全局工具白名单已合并写入配置文件",
-		zap.Int("count", len(merged)),
-	)
-	return nil
-}
-
-func updateHitlConfig(doc *yaml.Node, cfg config.HitlConfig) {
-	root := doc.Content[0]
-	hitlNode := ensureMap(root, "hitl")
-	setStringInMap(hitlNode, "audit_backend", cfg.EffectiveAuditBackend())
-	auditModelNode := ensureMap(hitlNode, "audit_model")
-	setStringInMap(auditModelNode, "provider", cfg.AuditModel.Provider)
-	setStringInMap(auditModelNode, "base_url", cfg.AuditModel.BaseURL)
-	setStringInMap(auditModelNode, "api_key", cfg.AuditModel.APIKey)
-	setStringInMap(auditModelNode, "model", cfg.AuditModel.Model)
-	setStringMapInMap(auditModelNode, "headers", cfg.AuditModel.Headers)
-	setStringInMap(ensureMap(auditModelNode, "reasoning"), "profile", cfg.AuditModel.Reasoning.Profile)
-	// flow 样式 [a, b, c] 单行展示，工具多时比块序列省行数
-	setFlowStringSliceInMap(hitlNode, "tool_whitelist", cfg.ToolWhitelist)
-	setStringInMap(hitlNode, "default_mode", cfg.EffectiveDefaultMode())
-	setStringInMap(hitlNode, "default_reviewer", cfg.EffectiveDefaultReviewer())
-	setIntInMap(hitlNode, "default_timeout_seconds", cfg.EffectiveDefaultTimeoutSeconds())
-	setIntInMap(hitlNode, "retention_days", cfg.RetentionDaysEffective())
-	setStringInMap(hitlNode, "audit_agent_prompt", cfg.AuditAgentPrompt)
-	setStringInMap(hitlNode, "audit_agent_prompt_review_edit", cfg.AuditAgentPromptReviewEdit)
-}
-
-// updateStorageConfig 把运行空间清理策略写回 config.yaml，保留文件其余内容与注释。
-func updateStorageConfig(doc *yaml.Node, cfg config.StorageConfig) {
-	root := doc.Content[0]
-	storageNode := ensureMap(root, "storage")
-	setBoolInMap(storageNode, "auto_clean", cfg.AutoCleanEffective())
-	setIntInMap(storageNode, "interval_minutes", cfg.IntervalMinutesEffective())
-	setIntInMap(storageNode, "orphan_grace_days", cfg.OrphanGraceDaysEffective())
-	setIntInMap(storageNode, "active_grace_hours", cfg.ActiveGraceHoursEffective())
-
-	// 按固定顺序输出，避免每次保存都因 map 迭代顺序不同而重排整个文件。
-	categoriesNode := ensureMap(storageNode, "categories")
-	for _, key := range config.StorageCategoryOrder {
-		categoryNode := ensureMap(categoriesNode, key)
-		setBoolInMap(categoryNode, "enabled", cfg.CategoryEnabled(key))
-		setIntInMap(categoryNode, "retention_days", cfg.CategoryRetentionDays(key))
-	}
-}
-
-// UpdateHitlDefaultConfig 更新全局默认人机协同配置并写入 config.yaml。
-func (h *ConfigHandler) UpdateHitlDefaultConfig(mode, reviewer string, timeoutSeconds int) error {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.config.Hitl.DefaultMode = config.HitlConfig{DefaultMode: mode}.EffectiveDefaultMode()
-	h.config.Hitl.DefaultReviewer = config.HitlConfig{DefaultReviewer: reviewer}.EffectiveDefaultReviewer()
-	if timeoutSeconds < 0 {
-		timeoutSeconds = 0
-	}
-	h.config.Hitl.DefaultTimeoutSeconds = &timeoutSeconds
-	if err := h.saveConfig(); err != nil {
-		return err
-	}
-	h.logger.Info("HITL 全局默认配置已写入配置文件",
-		zap.String("default_mode", h.config.Hitl.DefaultMode),
-		zap.String("default_reviewer", h.config.Hitl.DefaultReviewer),
-		zap.Int("default_timeout_seconds", timeoutSeconds),
-	)
-	return nil
-}
-
-// UpdateHitlDefaultReviewer 更新全局默认审批方并写入 config.yaml。
-func (h *ConfigHandler) UpdateHitlDefaultReviewer(reviewer string) error {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.config.Hitl.DefaultReviewer = config.HitlConfig{DefaultReviewer: reviewer}.EffectiveDefaultReviewer()
-	if err := h.saveConfig(); err != nil {
-		return err
-	}
-	h.logger.Info("HITL 全局默认审批方已写入配置文件", zap.String("default_reviewer", h.config.Hitl.DefaultReviewer))
-	return nil
-}
-
-// UpdateHitlAuditAgentStrategy 更新审批/审查编辑两套审计 Agent 提示词并写入 config.yaml。
-func (h *ConfigHandler) UpdateHitlAuditAgentStrategy(approvalPrompt, reviewEditPrompt string) error {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.config.Hitl.AuditAgentPrompt = strings.TrimSpace(approvalPrompt)
-	h.config.Hitl.AuditAgentPromptReviewEdit = strings.TrimSpace(reviewEditPrompt)
-	if err := h.saveConfig(); err != nil {
-		return err
-	}
-	h.logger.Info("HITL 审计 Agent 提示词已写入配置文件")
-	return nil
-}
-
-func updateRobotsConfig(doc *yaml.Node, cfg config.RobotsConfig) {
-	root := doc.Content[0]
-	robotsNode := ensureMap(root, "robots")
-
-	if cfg.Session.StrictUserIdentity != nil {
-		sessionNode := ensureMap(robotsNode, "session")
-		setBoolInMap(sessionNode, "strict_user_identity", *cfg.Session.StrictUserIdentity)
-	}
-
-	wechatNode := ensureMap(robotsNode, "wechat")
-	setBoolInMap(wechatNode, "enabled", cfg.Wechat.Enabled)
-	setStringInMap(wechatNode, "bot_token", cfg.Wechat.BotToken)
-	setStringInMap(wechatNode, "ilink_bot_id", cfg.Wechat.ILinkBotID)
-	setStringInMap(wechatNode, "ilink_user_id", cfg.Wechat.ILinkUserID)
-	setStringInMap(wechatNode, "base_url", cfg.Wechat.BaseURL)
-	setStringInMap(wechatNode, "bot_type", cfg.Wechat.BotType)
-	setStringInMap(wechatNode, "bot_agent", cfg.Wechat.BotAgent)
-
-	wecomNode := ensureMap(robotsNode, "wecom")
-	setBoolInMap(wecomNode, "enabled", cfg.Wecom.Enabled)
-	setStringInMap(wecomNode, "token", cfg.Wecom.Token)
-	setStringInMap(wecomNode, "encoding_aes_key", cfg.Wecom.EncodingAESKey)
-	setStringInMap(wecomNode, "corp_id", cfg.Wecom.CorpID)
-	setStringInMap(wecomNode, "secret", cfg.Wecom.Secret)
-	setIntInMap(wecomNode, "agent_id", int(cfg.Wecom.AgentID))
-
-	dingtalkNode := ensureMap(robotsNode, "dingtalk")
-	setBoolInMap(dingtalkNode, "enabled", cfg.Dingtalk.Enabled)
-	setStringInMap(dingtalkNode, "client_id", cfg.Dingtalk.ClientID)
-	setStringInMap(dingtalkNode, "client_secret", cfg.Dingtalk.ClientSecret)
-	setBoolInMap(dingtalkNode, "allow_conversation_id_fallback", cfg.Dingtalk.AllowConversationIDFallback)
-
-	larkNode := ensureMap(robotsNode, "lark")
-	setBoolInMap(larkNode, "enabled", cfg.Lark.Enabled)
-	setStringInMap(larkNode, "app_id", cfg.Lark.AppID)
-	setStringInMap(larkNode, "app_secret", cfg.Lark.AppSecret)
-	setStringInMap(larkNode, "verify_token", cfg.Lark.VerifyToken)
-	setBoolInMap(larkNode, "allow_chat_id_fallback", cfg.Lark.AllowChatIDFallback)
-
-	telegramNode := ensureMap(robotsNode, "telegram")
-	setBoolInMap(telegramNode, "enabled", cfg.Telegram.Enabled)
-	setStringInMap(telegramNode, "bot_token", cfg.Telegram.BotToken)
-	setStringInMap(telegramNode, "bot_username", cfg.Telegram.BotUsername)
-	setBoolInMap(telegramNode, "allow_group_messages", cfg.Telegram.AllowGroupMessages)
-
-	slackNode := ensureMap(robotsNode, "slack")
-	setBoolInMap(slackNode, "enabled", cfg.Slack.Enabled)
-	setStringInMap(slackNode, "bot_token", cfg.Slack.BotToken)
-	setStringInMap(slackNode, "app_token", cfg.Slack.AppToken)
-
-	discordNode := ensureMap(robotsNode, "discord")
-	setBoolInMap(discordNode, "enabled", cfg.Discord.Enabled)
-	setStringInMap(discordNode, "bot_token", cfg.Discord.BotToken)
-	setBoolInMap(discordNode, "allow_guild_messages", cfg.Discord.AllowGuildMessages)
-
-	qqNode := ensureMap(robotsNode, "qq")
-	setBoolInMap(qqNode, "enabled", cfg.QQ.Enabled)
-	setStringInMap(qqNode, "app_id", cfg.QQ.AppID)
-	setStringInMap(qqNode, "client_secret", cfg.QQ.ClientSecret)
-	setBoolInMap(qqNode, "sandbox", cfg.QQ.Sandbox)
-}
-
 func updateMultiAgentConfig(doc *yaml.Node, cfg config.MultiAgentConfig) {
 	root := doc.Content[0]
 	maNode := ensureMap(root, "multi_agent")
 	setBoolInMap(maNode, "enabled", cfg.Enabled)
-	setStringInMap(maNode, "robot_default_agent_mode", config.NormalizeRobotAgentMode(cfg))
-	setBoolInMap(maNode, "batch_use_multi_agent", cfg.BatchUseMultiAgent)
-	setIntInMap(maNode, "plan_execute_loop_max_iterations", cfg.PlanExecuteLoopMaxIterations)
 	mwNode := ensureMap(maNode, "eino_middleware")
 	setIntInMap(mwNode, "summarization_user_intent_ledger_max_runes", cfg.EinoMiddleware.SummarizationUserIntentLedgerMaxRunesEffective())
 	setIntInMap(mwNode, "summarization_user_intent_ledger_entry_max_runes", cfg.EinoMiddleware.SummarizationUserIntentLedgerEntryMaxRunesEffective())

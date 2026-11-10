@@ -21,9 +21,6 @@ func (a *einoAssistantOutputAccumulator) RecordMainAssistant(agentName, content 
 		return false
 	}
 	a.lastAssistant = content
-	if a.orchMode == "plan_execute" && strings.EqualFold(strings.TrimSpace(agentName), "executor") {
-		a.lastPlanExecuteExecutor = UnwrapPlanExecuteUserText(content)
-	}
 	return true
 }
 

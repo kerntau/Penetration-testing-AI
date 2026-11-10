@@ -11,37 +11,6 @@ import (
 	"go.uber.org/zap"
 )
 
-func (h *AgentHandler) finalizeAgentRunForDelivery(
-	conversationID string,
-	assistantMessageID string,
-	agentMode string,
-	result *multiagent.RunResult,
-	mcpExecutionIDs []string,
-	reasoningContent string,
-) agentfinalizer.Decision {
-	return h.finalizeAgentRunForDeliveryWithPolicy(conversationID, assistantMessageID, agentMode, result, mcpExecutionIDs, reasoningContent, false)
-}
-
-func (h *AgentHandler) finalizeAgentRunForDeliveryWithPolicy(
-	conversationID string,
-	assistantMessageID string,
-	agentMode string,
-	result *multiagent.RunResult,
-	mcpExecutionIDs []string,
-	reasoningContent string,
-	requireExecutionEvidence bool,
-) agentfinalizer.Decision {
-	decision := agentfinalizer.FromRunResult(h.db, result, agentfinalizer.Input{
-		ConversationID:           conversationID,
-		AssistantMessageID:       assistantMessageID,
-		AgentMode:                agentMode,
-		MCPExecutionIDs:          mcpExecutionIDs,
-		RequireExecutionEvidence: requireExecutionEvidence,
-	})
-	h.persistFinalizationDecision(conversationID, assistantMessageID, agentMode, mcpExecutionIDs, reasoningContent, decision)
-	return decision
-}
-
 func (h *AgentHandler) decideAgentRunForDeliveryWithPolicy(
 	conversationID string,
 	assistantMessageID string,
@@ -56,22 +25,6 @@ func (h *AgentHandler) decideAgentRunForDeliveryWithPolicy(
 		AgentMode:                agentMode,
 		MCPExecutionIDs:          mcpExecutionIDs,
 		RequireExecutionEvidence: requireExecutionEvidence,
-	})
-}
-
-func (h *AgentHandler) decideAgentRunForDelivery(
-	conversationID string,
-	assistantMessageID string,
-	agentMode string,
-	result *multiagent.RunResult,
-	mcpExecutionIDs []string,
-) agentfinalizer.Decision {
-	return agentfinalizer.FromRunResult(h.db, result, agentfinalizer.Input{
-		ConversationID:           conversationID,
-		AssistantMessageID:       assistantMessageID,
-		AgentMode:                agentMode,
-		MCPExecutionIDs:          mcpExecutionIDs,
-		RequireExecutionEvidence: false,
 	})
 }
 
@@ -96,51 +49,6 @@ func (h *AgentHandler) persistFinalizationDecision(
 	_, _ = h.db.Exec("UPDATE messages SET content = ?, updated_at = ? WHERE id = ?", finalizationBlockedMessage(decision), time.Now(), assistantMessageID)
 }
 
-func (h *AgentHandler) finalizeCandidateForDelivery(
-	conversationID string,
-	assistantMessageID string,
-	agentMode string,
-	response string,
-	mcpExecutionIDs []string,
-	awaitingHITL bool,
-	reasoningContent string,
-) agentfinalizer.Decision {
-	return h.finalizeCandidateForDeliveryWithPolicy(conversationID, assistantMessageID, agentMode, response, mcpExecutionIDs, awaitingHITL, reasoningContent, false)
-}
-
-func (h *AgentHandler) finalizeCandidateForDeliveryWithPolicy(
-	conversationID string,
-	assistantMessageID string,
-	agentMode string,
-	response string,
-	mcpExecutionIDs []string,
-	awaitingHITL bool,
-	reasoningContent string,
-	requireExecutionEvidence bool,
-) agentfinalizer.Decision {
-	decision := agentfinalizer.Decide(h.db, agentfinalizer.Input{
-		Response:                 response,
-		ConversationID:           conversationID,
-		AssistantMessageID:       assistantMessageID,
-		AgentMode:                agentMode,
-		MCPExecutionIDs:          mcpExecutionIDs,
-		AwaitingHITL:             awaitingHITL,
-		RequireExecutionEvidence: requireExecutionEvidence,
-	})
-	if assistantMessageID == "" || h.db == nil {
-		return decision
-	}
-	_ = h.db.AddProcessDetail(assistantMessageID, conversationID, "finalization_check", finalizationCheckMessage(decision), decision)
-	if decision.Finalizable {
-		if err := h.db.UpdateAssistantMessageFinalize(assistantMessageID, decision.FinalText, mcpExecutionIDs, reasoningContent); err != nil && h.logger != nil {
-			h.logger.Warn("更新最终助手消息失败", zap.Error(err), zap.String("conversationId", conversationID), zap.String("agentMode", agentMode))
-		}
-		return decision
-	}
-	_, _ = h.db.Exec("UPDATE messages SET content = ?, updated_at = ? WHERE id = ?", finalizationBlockedMessage(decision), time.Now(), assistantMessageID)
-	return decision
-}
-
 func finalizationCheckMessage(d agentfinalizer.Decision) string {
 	if d.Finalizable {
 		return "最终回复检查通过。"
@@ -149,9 +57,6 @@ func finalizationCheckMessage(d agentfinalizer.Decision) string {
 }
 
 func finalizationBlockedMessage(d agentfinalizer.Decision) string {
-	if d.CompletionReason == "workflow_rejected" && strings.TrimSpace(d.FinalText) != "" {
-		return d.FinalText
-	}
 	parts := []string{"任务尚未达到最终回复条件，暂不生成成功结论。"}
 	if d.CompletionReason != "" {
 		parts = append(parts, "原因: "+d.CompletionReason)
