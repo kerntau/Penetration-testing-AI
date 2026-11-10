@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"cyberstrike-ai/internal/multiagent"
-	"cyberstrike-ai/internal/openai"
-	"cyberstrike-ai/internal/runlease"
-	"cyberstrike-ai/internal/security"
+	"penetration-testing-ai/internal/multiagent"
+	"penetration-testing-ai/internal/openai"
+	"penetration-testing-ai/internal/runlease"
+	"penetration-testing-ai/internal/security"
 )
 
 // ErrTaskCancelled 用户取消任务的错误

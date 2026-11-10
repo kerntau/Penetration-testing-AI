@@ -1,7 +1,7 @@
 package multiagent
 
 import (
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 	"fmt"
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/schema"

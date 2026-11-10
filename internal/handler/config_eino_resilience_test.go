@@ -3,7 +3,7 @@ package handler
 import (
 	"testing"
 
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 	"gopkg.in/yaml.v3"
 )
 

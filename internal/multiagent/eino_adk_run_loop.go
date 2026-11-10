@@ -10,11 +10,11 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"cyberstrike-ai/internal/agent"
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/einomcp"
-	"cyberstrike-ai/internal/einoobserve"
-	"cyberstrike-ai/internal/security"
+	"penetration-testing-ai/internal/agent"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/einomcp"
+	"penetration-testing-ai/internal/einoobserve"
+	"penetration-testing-ai/internal/security"
 
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/schema"

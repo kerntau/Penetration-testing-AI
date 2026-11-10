@@ -1006,7 +1006,7 @@ html[data-theme="dark"] header {
     color: var(--accent-color);
 }
 
-/* 品牌字标：CyberStrike + AI 渐变 */
+/* 品牌字标：Penetration-testing + AI 渐变 */
 .brand-wordmark {
     display: inline-flex;
     align-items: baseline;
@@ -44896,7 +44896,7 @@ html[data-theme="dark"] .project-conversation-row:hover .project-conversation-it
 }
 
 /* ============================================================================
-   Layered chat composer: Codex-style hierarchy with CyberStrikeAI controls
+   Layered chat composer: Codex-style hierarchy with Penetration-testing-AI controls
    ============================================================================ */
 
 .chat-input-container {

@@ -1,5 +1,5 @@
 # ============================================
-# CyberStrikeAI 配置文件
+# Penetration-testing-AI 配置文件
 # ============================================
 # 本配置文件支持通过 Web 界面进行可视化配置
 # 点击右上角"设置"按钮即可修改配置
@@ -61,7 +61,7 @@ ai:
       # headers:
       #   X-Api-Key: ${OPENCODE_API_KEY}
       #   x-opencode-session: "%session_id%" # 自动替换为当前对话 ID
-      #   X-Client-Name: cyberstrike-ai
+      #   X-Client-Name: penetration-testing-ai
       #   HTTP-Referer: https://example.com
       # 配置自定义头时，仅允许同源重定向，跨主机、端口或协议的重定向会被拒绝。
       # HITL 审计仅在未显式配置 provider/base_url/api_key 时继承主渠道 headers；
@@ -179,7 +179,7 @@ multi_agent:
     zap_verbose: false # true：Debug 附带 input/output 摘要
     otel:
       enabled: true
-      service_name: cyberstrike-ai
+      service_name: penetration-testing-ai
       exporter: stdout # none | stdout（开发/本机）| otlphttp（生产接 Collector）
       otlp_endpoint: localhost:4318 # otlphttp 时使用，host:port，路径固定 /v1/traces
       sample_ratio: 1.0 # 0~1，ParentBased+TraceIDRatio

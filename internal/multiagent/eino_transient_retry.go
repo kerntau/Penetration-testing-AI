@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 
 	einoopenai "github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino/adk"

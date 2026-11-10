@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strings"
 
-	"cyberstrike-ai/internal/agent"
-	"cyberstrike-ai/internal/database"
-	"cyberstrike-ai/internal/mcp/builtin"
-	"cyberstrike-ai/internal/multiagent"
+	"penetration-testing-ai/internal/agent"
+	"penetration-testing-ai/internal/database"
+	"penetration-testing-ai/internal/mcp/builtin"
+	"penetration-testing-ai/internal/multiagent"
 
 	"go.uber.org/zap"
 )

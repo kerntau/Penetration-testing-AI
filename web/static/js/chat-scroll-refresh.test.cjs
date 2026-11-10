@@ -79,7 +79,7 @@ function createScrollRuntime() {
     };
     vm.runInNewContext(scroll, context);
     return {
-        api: window.CyberStrikeChatScroll,
+        api: window.PTAIChatScroll,
         chatEl,
         returnLatest,
         listeners,

@@ -9,11 +9,11 @@ args:
     ENV_NAME="${2:-default}"
     ADDITIONAL_ARGS="${3:-}"
 
-    BASE_DIR="${HOME}/.cyberstrike/venvs"
+    BASE_DIR="${HOME}/.ptai/venvs"
 
     detect_project_root() {
-      if [ -n "${CYBERSTRIKE_ROOT:-}" ] && [ -d "${CYBERSTRIKE_ROOT}" ]; then
-        printf '%s\n' "${CYBERSTRIKE_ROOT}"
+      if [ -n "${PTAI_ROOT:-}" ] && [ -d "${PTAI_ROOT}" ]; then
+        printf '%s\n' "${PTAI_ROOT}"
         return
       fi
       if command -v git >/dev/null 2>&1; then

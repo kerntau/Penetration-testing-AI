@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

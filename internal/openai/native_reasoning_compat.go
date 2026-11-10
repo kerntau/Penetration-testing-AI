@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 
 	"github.com/bytedance/sonic"
 )

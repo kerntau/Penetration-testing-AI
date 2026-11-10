@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"cyberstrike-ai/internal/authctx"
-	"cyberstrike-ai/internal/runlease"
+	"penetration-testing-ai/internal/authctx"
+	"penetration-testing-ai/internal/runlease"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"

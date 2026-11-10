@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"cyberstrike-ai/internal/agent"
-	"cyberstrike-ai/internal/database"
+	"penetration-testing-ai/internal/agent"
+	"penetration-testing-ai/internal/database"
 	"go.uber.org/zap"
 )
 

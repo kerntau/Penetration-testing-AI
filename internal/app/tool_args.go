@@ -1,6 +1,6 @@
 package app
 
-import "cyberstrike-ai/internal/mcp"
+import "penetration-testing-ai/internal/mcp"
 
 // textResult 构造一个文本型 MCP 工具结果。
 func textResult(msg string, isErr bool) *mcp.ToolResult {

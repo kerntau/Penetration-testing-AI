@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"cyberstrike-ai/internal/agent"
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/mcp"
-	"cyberstrike-ai/internal/toolguard"
+	"penetration-testing-ai/internal/agent"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/mcp"
+	"penetration-testing-ai/internal/toolguard"
 
 	"go.uber.org/zap"
 )

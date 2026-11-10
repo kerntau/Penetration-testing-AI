@@ -2,7 +2,7 @@ package openai
 
 import (
 	"context"
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 	"fmt"
 	"net/http"
 	"net/http/httptest"

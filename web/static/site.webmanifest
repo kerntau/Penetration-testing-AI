@@ -1,14 +1,11 @@
 {
-  "name": "CyberStrikeAI",
-  "short_name": "CyberStrikeAI",
+  "name": "Penetration-testing-AI",
+  "short_name": "Penetration-testing-AI",
   "description": "AI 安全测试平台 WebUI",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#f8fafc",
-  "theme_color": "#f8fafc",
-  "icons": [
-    { "src": "/static/logo.png", "sizes": "any", "type": "image/png", "purpose": "any" }
-  ]
+  "theme_color": "#f8fafc"
 }

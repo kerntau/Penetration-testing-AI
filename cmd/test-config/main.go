@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 )
 
 func main() {

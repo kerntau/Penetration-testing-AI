@@ -3,7 +3,7 @@ package openai
 import (
 	"net/http"
 
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 )
 
 // NewEinoHTTPClient adds OpenAI-compatible request fixes, SSE error decoding,

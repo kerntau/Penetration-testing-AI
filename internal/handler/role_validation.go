@@ -6,7 +6,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 )
 
 func validateRoleName(name string) error {

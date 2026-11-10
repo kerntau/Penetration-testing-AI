@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/database"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/database"
 
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/schema"

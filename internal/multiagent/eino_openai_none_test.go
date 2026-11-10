@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/reasoning"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/reasoning"
 
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/schema"

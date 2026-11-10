@@ -11,7 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"cyberstrike-ai/internal/database"
+	"penetration-testing-ai/internal/database"
 )
 
 const MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"

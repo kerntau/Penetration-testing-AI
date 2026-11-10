@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"cyberstrike-ai/internal/authctx"
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/authctx"
+	"penetration-testing-ai/internal/config"
 
 	"go.uber.org/zap"
 )

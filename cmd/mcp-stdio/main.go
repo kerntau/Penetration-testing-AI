@@ -1,11 +1,11 @@
 package main
 
 import (
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/logger"
-	"cyberstrike-ai/internal/mcp"
-	"cyberstrike-ai/internal/security"
-	"cyberstrike-ai/internal/toolguard"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/logger"
+	"penetration-testing-ai/internal/mcp"
+	"penetration-testing-ai/internal/security"
+	"penetration-testing-ai/internal/toolguard"
 	"flag"
 	"fmt"
 	"os"

@@ -6,8 +6,8 @@ import (
 	"errors"
 	"strings"
 
-	"cyberstrike-ai/internal/agent"
-	"cyberstrike-ai/internal/einomcp"
+	"penetration-testing-ai/internal/agent"
+	"penetration-testing-ai/internal/einomcp"
 
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/schema"

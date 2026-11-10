@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"cyberstrike-ai/internal/agent"
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/multiagent"
+	"penetration-testing-ai/internal/agent"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/multiagent"
 
 	"go.uber.org/zap"
 )

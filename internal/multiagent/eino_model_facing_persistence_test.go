@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"cyberstrike-ai/internal/agent"
+	"penetration-testing-ai/internal/agent"
 
 	"github.com/cloudwego/eino/schema"
 )

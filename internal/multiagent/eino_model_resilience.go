@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/llm"
-	"cyberstrike-ai/internal/openai"
-	"cyberstrike-ai/internal/reasoning"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/llm"
+	"penetration-testing-ai/internal/openai"
+	"penetration-testing-ai/internal/reasoning"
 
 	agenticopenai "github.com/cloudwego/eino-ext/components/model/agenticopenai"
 	einoopenai "github.com/cloudwego/eino-ext/components/model/openai"

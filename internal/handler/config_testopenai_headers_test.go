@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 )
 
 // TestTestOpenAIForwardsCustomHeaders 校验「测试连接」与真实对话一样会带上渠道自定义请求头：

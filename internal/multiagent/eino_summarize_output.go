@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"cyberstrike-ai/internal/agent"
+	"penetration-testing-ai/internal/agent"
 
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/schema"

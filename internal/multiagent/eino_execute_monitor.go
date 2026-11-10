@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"cyberstrike-ai/internal/agent"
-	"cyberstrike-ai/internal/einomcp"
+	"penetration-testing-ai/internal/agent"
+	"penetration-testing-ai/internal/einomcp"
 )
 
 // newEinoExecuteMonitorCallbacks 在 Eino filesystem execute 开始/结束时写入 MCP 监控库并 recorder(executionId)，

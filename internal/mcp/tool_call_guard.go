@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"cyberstrike-ai/internal/toolguard"
+	"penetration-testing-ai/internal/toolguard"
 )
 
 const toolGuardBlockedPrefix = "工具调用已被安全规则拦截"
-const toolGuardBlockedMetaKey = "cyberstrike.ai/blocked"
+const toolGuardBlockedMetaKey = "ptai.blocked"
 
 // toolGuardBlockError carries structured policy results through pre-run hooks.
 type toolGuardBlockError struct{ result *ToolResult }

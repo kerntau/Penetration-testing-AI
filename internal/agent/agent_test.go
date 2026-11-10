@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/mcp"
-	"cyberstrike-ai/internal/mcp/builtin"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/mcp"
+	"penetration-testing-ai/internal/mcp/builtin"
 
 	"go.uber.org/zap"
 )

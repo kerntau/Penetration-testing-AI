@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 )
 
 func TestConfiguredTaskContext(t *testing.T) {

@@ -1,4 +1,4 @@
-# CyberStrikeAI (Lean Edition)
+# Penetration-testing-AI (Lean Edition)
 
 [中文](README_CN.md) | [English](README.md)
 
@@ -27,6 +27,54 @@ An AI-driven 渗透测试 workbench: turn natural-language intent into auditable
 - 📡 **Process isolation** — task containment and cleanup (Windows Job / cgroup)
 - ⚙️ **No login** — open access, no account system
 
+## Tech stack
+
+**Backend**
+
+| Component | Technology | Role |
+| --- | --- | --- |
+| Language | Go 1.25 | Single binary; CGO required for SQLite |
+| HTTP | Gin 1.9 | Routing, middleware, static assets |
+| Agent runtime | CloudWeGo Eino 0.9.21 + eino-ext | ADK ChatModelAgent, tool-call loop, context compaction, streaming events |
+| Model access | eino-ext openai / agenticopenai / agenticclaude | OpenAI-compatible channels and native Claude channels |
+| MCP | In-house server + modelcontextprotocol/go-sdk | Built-in tool registry, external MCP (HTTP / stdio / SSE) federation |
+| Storage | SQLite (mattn/go-sqlite3, WAL) | Conversations, messages, vulnerabilities, tool executions; schema repaired on startup |
+| Config | gopkg.in/yaml.v3 | YAML config with environment variable expansion |
+| Logging | zap | Structured logs plus diagnostic files |
+| Observability | OpenTelemetry (OTLP / stdout) | Agent run tracing |
+| Token counting | tiktoken-go | Context budgeting and token usage stats |
+| JSON | bytedance/sonic (falls back to encoding/json) | Hot-path serialization |
+| Process & terminal | creack/pty, golang.org/x/sys | POSIX live shell; Windows Job / Linux cgroup isolation |
+| Network | net/http + HTTP/2 (TLS) | HTTPS main site, SSE streaming |
+
+**Frontend**
+
+| Component | Technology | Role |
+| --- | --- | --- |
+| Runtime | Vanilla ES Modules + plain CSS | No framework, no bundler; edit and refresh |
+| i18n | i18next | Chinese/English, driven by `data-i18n` attributes |
+| Markdown | marked + DOMPurify | Assistant message rendering with XSS sanitization |
+| Visualization | Cytoscape + ELK | Graph layout and relationship views |
+| Spreadsheets | xlsx.full.min.js | Vulnerability and asset export |
+| Package manager | None (no npm / pnpm) | Third-party libraries are vendored in the repo |
+
+**Tool runtime**
+
+| Component | Technology | Role |
+| --- | --- | --- |
+| Python | Python 3.10+ / venv / pip | Python-based recipes such as `api-fuzzer`; deps in `requirements.txt` |
+| Tool definitions | YAML recipes + YAML role prompts | `tools/` declares arguments, command and output handling; `roles/` scopes the tool set |
+| Skills | agentskills.io layout | `SKILL.md` under `skills/`, loaded on demand by the skill tool |
+
+**Deployment**
+
+| Item | Notes |
+| --- | --- |
+| Artifacts | One executable + `web/` assets + `roles/` `skills/` `tools/` config |
+| Start | `run.sh` (check deps → venv → build → run) or run the binary directly |
+| TLS | In-memory self-signed certificate by default; set `server.tls_cert_path` / `server.tls_key_path` for real certs |
+| Isolation | Windows Job Object / Linux cgroup, capping child processes and resources |
+
 ## Requirements
 
 - Go 1.25+ (see `go.mod`)
@@ -50,13 +98,13 @@ cp config.example.yaml config.yaml
 #          model: "deepseek-chat"
 
 # 3. Build and run
-go build -o cyberstrike-ai ./cmd/server
-./cyberstrike-ai --https
+go build -o penetration-testing-ai ./cmd/server
+./penetration-testing-ai --https
 ```
 
 Open `https://127.0.0.1:8080/` and accept the local self-signed certificate once.
 
-HTTPS is the default; pass `--http` for plain HTTP, or set `CYBERSTRIKE_HTTPS=1`.
+HTTPS is the default; pass `--http` for plain HTTP, or set `PTAI_HTTPS=1`.
 
 One-shot script (Linux / macOS): `./run.sh` — creates `venv/`, installs dependencies, builds and starts.
 

@@ -179,7 +179,7 @@ test('过程详情隐藏 Eino 内部诊断但保留真实工具调用', () => {
             data: {
                 toolName: 'task',
                 argumentsObj: {
-                    _cyberstrike_model_output_recovery: {
+                    _ptai_model_output_recovery: {
                         reason: 'invalid_tool_arguments_json',
                         repair_attempt: 1,
                     },

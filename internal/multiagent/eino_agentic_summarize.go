@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/database"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/database"
 
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/adk/middlewares/summarization"
@@ -94,7 +94,7 @@ func newEinoAgenticSummarizationMiddleware(
 	memoryScope := summarizationMemoryScope(memoryScopes)
 	transcriptPath := ""
 	if conv := strings.TrimSpace(conversationID); conv != "" {
-		baseRoot := filepath.Join(os.TempDir(), "cyberstrike-summarization", sanitizeEinoPathSegment(conv), "summarization")
+		baseRoot := filepath.Join(os.TempDir(), "ptai-summarization", sanitizeEinoPathSegment(conv), "summarization")
 		if dbPath := strings.TrimSpace(appCfg.Database.Path); dbPath != "" {
 			baseRoot = filepath.Join(filepath.Dir(dbPath), "conversation_artifacts", sanitizeEinoPathSegment(conv), "summarization")
 		}

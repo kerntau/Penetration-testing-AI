@@ -12,14 +12,14 @@ import (
 	"sync"
 	"time"
 
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"go.uber.org/zap"
 )
 
 const (
-	clientName    = "CyberStrikeAI"
+	clientName    = "Penetration-testing-AI"
 	clientVersion = "1.0.0"
 )
 

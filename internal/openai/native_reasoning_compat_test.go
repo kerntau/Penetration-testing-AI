@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 )
 
 func TestNativeReasoningActualModelAndToolChoice(t *testing.T) {

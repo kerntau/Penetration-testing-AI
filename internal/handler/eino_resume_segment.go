@@ -3,8 +3,8 @@ package handler
 import (
 	"context"
 
-	"cyberstrike-ai/internal/agent"
-	"cyberstrike-ai/internal/multiagent"
+	"penetration-testing-ai/internal/agent"
+	"penetration-testing-ai/internal/multiagent"
 )
 
 // applyEinoTraceResumeSegment 中断并继续：persist last_react_* → loadHistory，可选替换下一段 user 文案。

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"cyberstrike-ai/internal/runlease"
+	"penetration-testing-ai/internal/runlease"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

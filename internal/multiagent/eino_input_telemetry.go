@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"cyberstrike-ai/internal/agent"
+	"penetration-testing-ai/internal/agent"
 
 	"github.com/bytedance/sonic"
 	"github.com/cloudwego/eino/adk"

@@ -341,14 +341,14 @@ func TestLoadUpdateRepoReadsOnlyTheSourceField(t *testing.T) {
 	path := filepath.Join(dir, "config.yaml")
 	// The rest of the file may be broken or unvalidatable; the CLI only asks for the
 	// update source, and a full config load must not be a precondition for updating.
-	if err := os.WriteFile(path, []byte("update:\n  repo: https://github.com/Sycun/CyberStrikeAI.git\nserver:\n  port: 8088\n"), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte("update:\n  repo: https://github.com/kerntau/Penetration-testing-AI.git\nserver:\n  port: 8088\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	repo, err := LoadUpdateRepo(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if repo != "https://github.com/Sycun/CyberStrikeAI.git" {
+	if repo != "https://github.com/kerntau/Penetration-testing-AI.git" {
 		t.Fatalf("repo = %q, want the configured address", repo)
 	}
 

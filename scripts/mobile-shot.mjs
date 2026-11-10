@@ -1,5 +1,5 @@
 /*
- * CyberStrikeAI — mobile shell screenshots.
+ * Penetration-testing-AI — mobile shell screenshots.
  *
  * Captures the injected mobile chrome (appbar / tab bar / drawer / bottom sheet)
  * at a phone viewport without needing a login: the chrome is injected by
@@ -78,7 +78,7 @@ await send('Page.navigate', { url: BASE + '/' }, sessionId);
 await sleep(1500);
 const theme = argv.theme || (argv.dark === '1' ? 'dark' : '');
 if (theme) {
-  await ev(`localStorage.setItem('cyberstrike-theme', ${JSON.stringify(theme)})`);
+  await ev(`localStorage.setItem('ptai-theme', ${JSON.stringify(theme)})`);
   await send('Page.navigate', { url: BASE + '/' }, sessionId);
 }
 await sleep(3000);

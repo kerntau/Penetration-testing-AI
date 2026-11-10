@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 
 	agenticclaude "github.com/cloudwego/eino-ext/components/model/agenticclaude"
 	"github.com/cloudwego/eino/adk"

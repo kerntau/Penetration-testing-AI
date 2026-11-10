@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# CyberStrikeAI 一键部署与启动脚本：检查依赖 → 准备 venv → 编译 → 启动。
+# Penetration-testing-AI 一键部署与启动脚本：检查依赖 → 准备 venv → 编译 → 启动。
 # 用法：./run.sh [--http|--https] [其他传递给二进制的参数]
 
 set -euo pipefail
@@ -19,7 +19,7 @@ success() { echo -e "${GREEN}[+]${NC} $1"; }
 warn() { echo -e "${YELLOW}[!]${NC} $1"; }
 error() { echo -e "${RED}[-]${NC} $1"; }
 
-BINARY_NAME="cyberstrike-ai"
+BINARY_NAME="penetration-testing-ai"
 CONFIG_FILE="$ROOT_DIR/config.yaml"
 EXAMPLE_CONFIG_FILE="$ROOT_DIR/config.example.yaml"
 VENV_DIR="$ROOT_DIR/venv"
@@ -84,7 +84,7 @@ build() {
 main() {
     echo ""
     echo "=========================================="
-    echo "  CyberStrikeAI 部署与启动"
+    echo "  Penetration-testing-AI 部署与启动"
     echo "  默认 HTTPS（自签证书）；明文 HTTP: ./run.sh --http"
     echo "=========================================="
     echo ""

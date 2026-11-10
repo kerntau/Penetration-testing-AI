@@ -9,9 +9,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"cyberstrike-ai/internal/authctx"
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/toolguard"
+	"penetration-testing-ai/internal/authctx"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/toolguard"
 
 	"go.uber.org/zap"
 )

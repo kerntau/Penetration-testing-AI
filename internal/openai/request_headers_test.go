@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 )
 
 func TestApplyCustomHeadersOverridesBuiltinAndSkipsEmpty(t *testing.T) {
@@ -18,7 +18,7 @@ func TestApplyCustomHeadersOverridesBuiltinAndSkipsEmpty(t *testing.T) {
 	applyCustomHeaders(req, &config.OpenAIConfig{Headers: map[string]string{
 		"Authorization": "Bearer custom",
 		"X-Api-Key":     "secret",
-		"User-Agent":    "cyberstrike-ai/1.0",
+		"User-Agent":    "penetration-testing-ai/1.0",
 		"X-Empty":       "",
 		"  ":            "dropped",
 	}})
@@ -28,7 +28,7 @@ func TestApplyCustomHeadersOverridesBuiltinAndSkipsEmpty(t *testing.T) {
 	if got := req.Header.Get("X-Api-Key"); got != "secret" {
 		t.Fatalf("X-Api-Key = %q", got)
 	}
-	if got := req.Header.Get("User-Agent"); got != "cyberstrike-ai/1.0" {
+	if got := req.Header.Get("User-Agent"); got != "penetration-testing-ai/1.0" {
 		t.Fatalf("User-Agent = %q", got)
 	}
 	if got := req.Header.Get("X-Empty"); got != "" {

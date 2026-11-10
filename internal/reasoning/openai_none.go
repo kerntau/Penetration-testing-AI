@@ -3,7 +3,7 @@ package reasoning
 import (
 	"strings"
 
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 
 	einoopenai "github.com/cloudwego/eino-ext/components/model/openai"
 )

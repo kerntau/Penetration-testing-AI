@@ -54,7 +54,7 @@
     "retry": "Failed to load. Click to retry."
   },
   "header": {
-    "title": "CyberStrikeAI",
+    "title": "Penetration-testing-AI",
     "apiDocs": "API Docs",
     "github": "GitHub",
     "language": "Interface language",

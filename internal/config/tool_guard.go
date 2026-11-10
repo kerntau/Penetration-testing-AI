@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 
-	"cyberstrike-ai/internal/toolguard"
+	"penetration-testing-ai/internal/toolguard"
 
 	"gopkg.in/yaml.v3"
 )

@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"cyberstrike-ai/internal/agent"
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/database"
-	copenai "cyberstrike-ai/internal/openai"
+	"penetration-testing-ai/internal/agent"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/database"
+	copenai "penetration-testing-ai/internal/openai"
 
 	"github.com/bytedance/sonic"
 	einoopenai "github.com/cloudwego/eino-ext/components/model/openai"
@@ -153,7 +153,7 @@ func newEinoSummarizationMiddleware(
 	memoryScope := summarizationMemoryScope(memoryScopes)
 	transcriptPath := ""
 	if conv := strings.TrimSpace(conversationID); conv != "" {
-		baseRoot := filepath.Join(os.TempDir(), "cyberstrike-summarization", sanitizeEinoPathSegment(conv), "summarization")
+		baseRoot := filepath.Join(os.TempDir(), "ptai-summarization", sanitizeEinoPathSegment(conv), "summarization")
 		if dbPath := strings.TrimSpace(appCfg.Database.Path); dbPath != "" {
 			// Persist with the same lifecycle as local conversation storage.
 			baseRoot = filepath.Join(filepath.Dir(dbPath), "conversation_artifacts", sanitizeEinoPathSegment(conv), "summarization")

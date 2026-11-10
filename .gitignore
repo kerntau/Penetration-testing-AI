@@ -27,8 +27,8 @@ config.yaml.backup
 skills/.eino/
 
 # Build outputs
-cyberstrike-ai
-cyberstrike-ai.exe
+penetration-testing-ai
+penetration-testing-ai.exe
 *.test
 bin/
 dist/
@@ -49,7 +49,7 @@ coverage.html
 .update-state.json.tmp
 .update-build-pending
 .update-build-pending.tmp
-cyberstrike-ai.prev
+penetration-testing-ai.prev
 
 # Logs and temporary files
 /log/

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"cyberstrike-ai/internal/multiagent"
+	"penetration-testing-ai/internal/multiagent"
 )
 
 func TestCancelTaskInvokesToolCancelerOnFullStop(t *testing.T) {

@@ -2,7 +2,7 @@ package mcp
 
 import (
 	"context"
-	"cyberstrike-ai/internal/runlease"
+	"penetration-testing-ai/internal/runlease"
 	"errors"
 	"testing"
 	"time"

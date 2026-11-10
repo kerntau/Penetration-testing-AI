@@ -831,7 +831,7 @@
         updateTurnRailState();
     }
 
-    window.CyberStrikeChatScroll = {
+    window.PTAIChatScroll = {
         init: initChatScroll,
         onUserSendMessage: onUserSendMessage,
         onStreamEnd: onStreamEnd,

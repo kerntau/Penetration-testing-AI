@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/einomcp"
-	"cyberstrike-ai/internal/security"
-	"cyberstrike-ai/internal/tooloutput"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/einomcp"
+	"penetration-testing-ai/internal/security"
+	"penetration-testing-ai/internal/tooloutput"
 
 	localbk "github.com/cloudwego/eino-ext/adk/backend/local"
 	"github.com/cloudwego/eino/adk"

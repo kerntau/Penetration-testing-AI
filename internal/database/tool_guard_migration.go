@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"cyberstrike-ai/internal/mcp"
+	"penetration-testing-ai/internal/mcp"
 )
 
 const legacyToolGuardPrefix = "工具调用已被安全规则拦截"

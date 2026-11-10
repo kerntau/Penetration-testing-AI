@@ -1,6 +1,6 @@
 package multiagent
 
-import "cyberstrike-ai/internal/openai"
+import "penetration-testing-ai/internal/openai"
 
 type einoMainResponseStreamEmitter struct {
 	progress       func(eventType, message string, data interface{})

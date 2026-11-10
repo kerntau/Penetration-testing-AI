@@ -28,7 +28,7 @@ parameters:
     type: "string"
     description: "Ghidra项目名称"
     required: false
-    default: "cyberstrike_analysis"
+    default: "ptai_analysis"
     position: 1
     format: "positional"
   - name: "binary"

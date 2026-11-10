@@ -109,8 +109,8 @@ let isComposing = false;
 let compositionEndTimer = null;
 
 // 输入框草稿保存相关
-const DRAFT_STORAGE_KEY = 'cyberstrike-chat-draft';
-const RECENT_CONVERSATIONS_EXPANDED_KEY = 'cyberstrike-chat-recent-conversations-expanded';
+const DRAFT_STORAGE_KEY = 'ptai-chat-draft';
+const RECENT_CONVERSATIONS_EXPANDED_KEY = 'ptai-chat-recent-conversations-expanded';
 let draftSaveTimer = null;
 const DRAFT_SAVE_DELAY = 500; // 500ms防抖延迟
 
@@ -118,9 +118,9 @@ const CHAT_INTERRUPT_CONTINUE_USER_PREFIX = '【用户补充 / 中断后继续�
 function isInterruptContinueInjectChatMessage(content) {
     return typeof content === 'string' && content.trimStart().startsWith(CHAT_INTERRUPT_CONTINUE_USER_PREFIX);
 }
-const AI_CHANNEL_STORAGE_KEY = 'cyberstrike-chat-ai-channel';
-const REASONING_MODE_LS = 'cyberstrike-chat-reasoning-mode';
-const REASONING_EFFORT_LS = 'cyberstrike-chat-reasoning-effort';
+const AI_CHANNEL_STORAGE_KEY = 'ptai-chat-ai-channel';
+const REASONING_MODE_LS = 'ptai-chat-reasoning-mode';
+const REASONING_EFFORT_LS = 'ptai-chat-reasoning-effort';
 const CHAT_AI_CHANNEL_SUMMARY_NAME_MAX = 10;
 let chatAIChannels = {};
 let chatDefaultAIChannel = '';
@@ -1169,8 +1169,8 @@ async function sendMessage(options = {}) {
 
     // 显示用户消息
     const displayMessage = message;
-    if (window.CyberStrikeChatScroll) {
-        window.CyberStrikeChatScroll.onUserSendMessage();
+    if (window.PTAIChatScroll) {
+        window.PTAIChatScroll.onUserSendMessage();
     }
     addMessage('user', displayMessage, null, null, null, { scroll: 'none' });
     if (currentConversationId) {
@@ -1224,9 +1224,9 @@ async function sendMessage(options = {}) {
 
     // 创建进度消息容器（使用详细的进度展示）
     const progressId = addProgressMessage();
-    if (window.CyberStrikeChatScroll) {
-        window.CyberStrikeChatScroll.markProgressStreaming(true, progressId);
-        window.CyberStrikeChatScroll.onUserSendMessage();
+    if (window.PTAIChatScroll) {
+        window.PTAIChatScroll.markProgressStreaming(true, progressId);
+        window.PTAIChatScroll.onUserSendMessage();
     }
     const progressElement = document.getElementById(progressId);
     registerProgressTask(progressId, streamConversationId);
@@ -1360,8 +1360,8 @@ async function sendMessage(options = {}) {
             }
         } finally {
             const clearedOwnedStream = clearLiveChatStreamIfOwned(liveStreamState);
-            if (clearedOwnedStream && !liveStreamState.detached && window.CyberStrikeChatScroll) {
-                window.CyberStrikeChatScroll.onStreamEnd();
+            if (clearedOwnedStream && !liveStreamState.detached && window.PTAIChatScroll) {
+                window.PTAIChatScroll.onStreamEnd();
             }
         }
 
@@ -2251,8 +2251,8 @@ function addMessage(role, content, mcpExecutionIds = null, progressId = null, cr
         messageDiv.setAttribute('data-system-ready-message', '1');
     }
     messagesDiv.appendChild(messageDiv);
-    if (window.CyberStrikeChatScroll) {
-        window.CyberStrikeChatScroll.applyMessageScroll(options);
+    if (window.PTAIChatScroll) {
+        window.PTAIChatScroll.applyMessageScroll(options);
     } else {
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
@@ -2469,14 +2469,14 @@ function hasModelOutputRecoveryMarker(value) {
     let obj = value;
     if (typeof obj === 'string') {
         const text = obj.trim();
-        if (!text || text.indexOf('_cyberstrike_model_output_recovery') === -1) return false;
+        if (!text || text.indexOf('_ptai_model_output_recovery') === -1) return false;
         try {
             obj = JSON.parse(text);
         } catch (e) {
             return false;
         }
     }
-    return !!(obj && typeof obj === 'object' && obj._cyberstrike_model_output_recovery);
+    return !!(obj && typeof obj === 'object' && obj._ptai_model_output_recovery);
 }
 
 function isModelOutputRecoveryToolCallDetail(detail) {
@@ -5000,8 +5000,8 @@ async function loadConversation(conversationId) {
                         if (offset < rest.length) {
                             requestAnimationFrame(renderNextBatch);
                         } else {
-                            if (window.CyberStrikeChatScroll) {
-                                window.CyberStrikeChatScroll.forceScrollToBottom(false);
+                            if (window.PTAIChatScroll) {
+                                window.PTAIChatScroll.forceScrollToBottom(false);
                             } else {
                                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
                             }
@@ -5012,8 +5012,8 @@ async function loadConversation(conversationId) {
                 });
             }
 
-            if (window.CyberStrikeChatScroll) {
-                window.CyberStrikeChatScroll.forceScrollToBottom(false);
+            if (window.PTAIChatScroll) {
+                window.PTAIChatScroll.forceScrollToBottom(false);
             } else {
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
             }
@@ -5030,15 +5030,15 @@ async function loadConversation(conversationId) {
                 await window.restoreHitlInlineForConversation(conversationId);
             }
             if (
-                window.CyberStrikeChatScroll &&
-                typeof window.CyberStrikeChatScroll.settleConversationRestoreToBottom === 'function'
+                window.PTAIChatScroll &&
+                typeof window.PTAIChatScroll.settleConversationRestoreToBottom === 'function'
             ) {
-                window.CyberStrikeChatScroll.settleConversationRestoreToBottom(30);
+                window.PTAIChatScroll.settleConversationRestoreToBottom(30);
             }
         } else {
             renderChatWelcomeEmptyState();
-            if (window.CyberStrikeChatScroll) {
-                window.CyberStrikeChatScroll.forceScrollToBottom(false);
+            if (window.PTAIChatScroll) {
+                window.PTAIChatScroll.forceScrollToBottom(false);
             } else {
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
             }
@@ -5242,8 +5242,8 @@ let contextMenuConversationId = null;
 let contextMenuConversationTitle = '';
 let conversationsListLoadSeq = 0; // 对话列表加载序号，避免并发请求导致重复渲染
 let conversationsListNavigateGen = 0; // 用户主动翻页代数，防止后台刷新覆盖翻页结果
-const CONVERSATIONS_PAGE_SIZE_KEY = 'cyberstrike.conversations_page_size';
-const CONVERSATIONS_SORT_KEY = 'cyberstrike.conversations_sort_by';
+const CONVERSATIONS_PAGE_SIZE_KEY = 'ptai.conversations_page_size';
+const CONVERSATIONS_SORT_KEY = 'ptai.conversations_sort_by';
 function getConversationSortBy() {
     try {
         const saved = localStorage.getItem(CONVERSATIONS_SORT_KEY);
@@ -6724,8 +6724,8 @@ function refreshChatPanelI18n() {
                 window.syncMcpToolsToggleButton(msgEl);
             }
         });
-        if (window.CyberStrikeChatScroll && typeof window.CyberStrikeChatScroll.refreshTurnRail === 'function') {
-            window.CyberStrikeChatScroll.refreshTurnRail();
+        if (window.PTAIChatScroll && typeof window.PTAIChatScroll.refreshTurnRail === 'function') {
+            window.PTAIChatScroll.refreshTurnRail();
         }
     }
 

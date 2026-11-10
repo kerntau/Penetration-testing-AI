@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
-	"cyberstrike-ai/internal/authctx"
-	"cyberstrike-ai/internal/mcp/builtin"
-	"cyberstrike-ai/internal/toolguard"
+	"penetration-testing-ai/internal/authctx"
+	"penetration-testing-ai/internal/mcp/builtin"
+	"penetration-testing-ai/internal/toolguard"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -483,7 +483,7 @@ func (s *Server) handleInitialize(msg *Message) *Message {
 			Sampling: map[string]interface{}{},
 		},
 		ServerInfo: ServerInfo{
-			Name:    "CyberStrikeAI",
+			Name:    "Penetration-testing-AI",
 			Version: "1.0.0",
 		},
 	}

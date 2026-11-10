@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-const ModelFacingTraceVersionKey = "cyberstrike_model_facing_trace_version"
+const ModelFacingTraceVersionKey = "ptai_model_facing_trace_version"
 const SummarizationContentTypeKey = "_eino_summarization_content_type"
 const OriginalUserIntentEntriesKey = "_csai_original_user_intent_entries"
 

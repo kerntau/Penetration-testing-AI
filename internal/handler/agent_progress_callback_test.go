@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/database"
-	"cyberstrike-ai/internal/openai"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/database"
+	"penetration-testing-ai/internal/openai"
 
 	"go.uber.org/zap"
 )
@@ -147,7 +147,7 @@ func TestCreateProgressCallback_PersistsRunningResponseBeforeDone(t *testing.T) 
 	cb := h.createProgressCallback(context.Background(), nil, conv.ID, asst.ID, nil)
 	meta := map[string]interface{}{
 		"streamId":      "response-refresh-1",
-		"einoAgent":     "cyberstrike-eino-single",
+		"einoAgent":     "ptai-eino-single",
 		"orchestration": "eino_single",
 	}
 	cb("response_start", "", meta)

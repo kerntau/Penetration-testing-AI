@@ -8,7 +8,7 @@ import (
 	"io"
 	"strings"
 
-	"cyberstrike-ai/internal/llm"
+	"penetration-testing-ai/internal/llm"
 
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/schema"

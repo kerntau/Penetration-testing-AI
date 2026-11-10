@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 )
 
 const defaultEmptyResponseContinueMaxAttempts = 5

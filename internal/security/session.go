@@ -1,7 +1,7 @@
 package security
 
 import (
-	"cyberstrike-ai/internal/database"
+	"penetration-testing-ai/internal/database"
 
 	"github.com/gin-gonic/gin"
 )

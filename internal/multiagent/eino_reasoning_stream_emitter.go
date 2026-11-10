@@ -3,7 +3,7 @@ package multiagent
 import (
 	"strings"
 
-	"cyberstrike-ai/internal/openai"
+	"penetration-testing-ai/internal/openai"
 )
 
 type einoReasoningStreamEmitter struct {

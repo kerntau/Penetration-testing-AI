@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"cyberstrike-ai/internal/agent"
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/einomcp"
+	"penetration-testing-ai/internal/agent"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/einomcp"
 
 	"github.com/cloudwego/eino/adk"
 	"go.uber.org/zap"

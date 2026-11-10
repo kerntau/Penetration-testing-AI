@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"unicode/utf8"
 
-	"cyberstrike-ai/internal/agent"
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/agent"
+	"penetration-testing-ai/internal/config"
 
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/schema"

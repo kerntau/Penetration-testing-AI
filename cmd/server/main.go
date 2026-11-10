@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"cyberstrike-ai/internal/app"
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/logger"
-	"cyberstrike-ai/internal/processguard"
-	"cyberstrike-ai/internal/termout"
+	"penetration-testing-ai/internal/app"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/logger"
+	"penetration-testing-ai/internal/processguard"
+	"penetration-testing-ai/internal/termout"
 	"flag"
 	"fmt"
 	"os"
@@ -31,7 +31,7 @@ func main() {
 		os.Exit(2)
 	}
 	if !*httpsBootstrap && !*httpBootstrap {
-		v := strings.TrimSpace(os.Getenv("CYBERSTRIKE_HTTPS"))
+		v := strings.TrimSpace(os.Getenv("PTAI_HTTPS"))
 		if v == "1" || strings.EqualFold(v, "true") || strings.EqualFold(v, "yes") {
 			*httpsBootstrap = true
 		}
@@ -43,7 +43,7 @@ func main() {
 		cp = "config.yaml"
 	}
 	if strings.HasPrefix(cp, "-") {
-		fmt.Fprintf(os.Stderr, "Invalid -config path %q.\nIf HTTPS is also needed, use: ./cyberstrike-ai --https -config config.yaml (-config must be followed by a yaml file path).\n", cp)
+		fmt.Fprintf(os.Stderr, "Invalid -config path %q.\nIf HTTPS is also needed, use: ./penetration-testing-ai --https -config config.yaml (-config must be followed by a yaml file path).\n", cp)
 		os.Exit(2)
 	}
 	localConfig, err := config.EnsureLocalConfig(cp)

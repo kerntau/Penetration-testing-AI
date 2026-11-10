@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 
 	einoopenai "github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino/components/model"
@@ -183,7 +183,7 @@ func TestSummaryOutputLimitConciseRetry(t *testing.T) {
 						return
 					}
 					bodies <- body
-					if r.Header.Get("X-CyberStrike-Summarization") != "1" {
+					if r.Header.Get("X-PTAI-Summarization") != "1" {
 						t.Error("missing summary request header")
 					}
 					text, reason := tc.firstText, tc.firstReason

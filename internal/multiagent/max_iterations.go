@@ -1,6 +1,6 @@
 package multiagent
 
-import "cyberstrike-ai/internal/config"
+import "penetration-testing-ai/internal/config"
 
 const defaultAgentMaxIterations = 3000
 

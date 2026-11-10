@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/database"
-	"cyberstrike-ai/internal/security"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/database"
+	"penetration-testing-ai/internal/security"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

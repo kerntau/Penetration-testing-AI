@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/mcp"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/mcp"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

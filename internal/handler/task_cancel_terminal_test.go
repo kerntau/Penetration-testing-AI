@@ -2,7 +2,7 @@ package handler
 
 import (
 	"context"
-	"cyberstrike-ai/internal/multiagent"
+	"penetration-testing-ai/internal/multiagent"
 	"testing"
 )
 

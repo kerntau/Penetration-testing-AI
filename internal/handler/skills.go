@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/database"
-	"cyberstrike-ai/internal/skillpackage"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/database"
+	"penetration-testing-ai/internal/skillpackage"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

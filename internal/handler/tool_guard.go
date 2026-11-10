@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"cyberstrike-ai/internal/toolguard"
+	"penetration-testing-ai/internal/toolguard"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

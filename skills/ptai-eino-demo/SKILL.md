@@ -1,9 +1,9 @@
 ---
-name: cyberstrike-eino-demo
+name: ptai-eino-demo
 description: 满配示例技能包：SKILL.md + scripts/、references/、assets/ 等可选目录；验证 Eino skill 与 HTTP 包内路径（仅授权安全测试与教学）。
 ---
 
-# CyberStrike × Eino 满配技能演示
+# Penetration-testing × Eino 满配技能演示
 
 本包与 [Agent Skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview) 一致：**`SKILL.md` 为清单 + 主说明**（无单独 `SKILL.yaml`）。同目录可有 **`scripts/`**、**`references/`**、**`assets/`** 等任意子目录（只要路径安全、未触达包深度/文件数上限），由 **`ListPackageFiles` / `resource_path`** 与 Eino 本机工具读取。补充说明见 `FORMS.md`、`REFERENCE.md`。
 
@@ -12,7 +12,7 @@ description: 满配示例技能包：SKILL.md + scripts/、references/、assets/
 用于一次性验证：
 
 - HTTP `GET /api/skills` 列表（`script_count`、`file_count`、`progressive` 等为推导/扫描结果）
-- `GET /api/skills/cyberstrike-eino-demo?depth=summary|full`
+- `GET /api/skills/ptai-eino-demo?depth=summary|full`
 - `section=` 对应 `SKILL.md` 中 **`##` 标题**或 ASCII 标题的短 id（例如 `## Payload 样例` 常对应 `section=payload`）
 - 多代理内 ADK **`skill`** 工具（及可选本机文件工具）读取包内相对路径资源
 - Eino `FilesystemSkillsRetriever` 对包摘要、`##` 分块、脚本条目的检索

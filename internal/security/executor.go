@@ -12,9 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"cyberstrike-ai/internal/config"
-	"cyberstrike-ai/internal/mcp"
-	"cyberstrike-ai/internal/tooloutput"
+	"penetration-testing-ai/internal/config"
+	"penetration-testing-ai/internal/mcp"
+	"penetration-testing-ai/internal/tooloutput"
 
 	"github.com/creack/pty"
 	"github.com/google/uuid"

@@ -1,4 +1,4 @@
-# CyberStrikeAI（精简版）
+# Penetration-testing-AI（精简版）
 
 [中文](README_CN.md) | [English](README.md)
 
@@ -27,6 +27,54 @@ AI 驱动的渗透测试工作台：把自然语言意图转成可审计的渗�
 - 📡 **进程隔离**：任务进程隔离与清理（Windows Job / cgroup）
 - ⚙️ **零登录**：访问即用，无需账号体系
 
+## 技术栈
+
+**后端**
+
+| 组件 | 技术 | 用途 |
+| --- | --- | --- |
+| 语言 | Go 1.25 | 单二进制编译，CGO 依赖 SQLite |
+| HTTP 框架 | Gin 1.9 | 路由、中间件、静态资源 |
+| 智能体框架 | CloudWeGo Eino 0.9.21 + eino-ext | ADK ChatModelAgent、工具调用循环、上下文压缩、流式事件 |
+| 模型接入 | eino-ext openai / agenticopenai / agenticclaude | OpenAI 兼容通道与 Claude 原生通道 |
+| MCP | 自研服务端 + modelcontextprotocol/go-sdk | 内置工具注册、外部 MCP（HTTP / stdio / SSE）联邦 |
+| 数据库 | SQLite（mattn/go-sqlite3，WAL） | 会话、消息、漏洞、工具执行记录，启动时自动结构校正 |
+| 配置 | gopkg.in/yaml.v3 | YAML 配置 + 环境变量展开 |
+| 日志 | zap | 结构化日志与诊断落盘 |
+| 可观测性 | OpenTelemetry（OTLP / stdout） | 智能体运行链路追踪 |
+| 令牌计数 | tiktoken-go | 上下文预算与 token 用量统计 |
+| JSON | bytedance/sonic（不支持时回落 encoding/json） | 高频序列化 |
+| 进程与终端 | creack/pty、golang.org/x/sys | POSIX 实时 shell、Windows Job / Linux cgroup 进程隔离 |
+| 网络 | net/http + HTTP/2（TLS） | 主站 HTTPS、SSE 流式输出 |
+
+**前端**
+
+| 组件 | 技术 | 用途 |
+| --- | --- | --- |
+| 运行形态 | 原生 ES Module + 原生 CSS | 无框架、无打包步骤，改完刷新即生效 |
+| 国际化 | i18next | 中英双语，`data-i18n` 属性驱动 |
+| Markdown | marked + DOMPurify | 助手消息渲染与 XSS 净化 |
+| 可视化 | Cytoscape + ELK | 图谱布局与关系展示 |
+| 表格 | xlsx.full.min.js | 漏洞与资产数据导出 |
+| 依赖管理 | 无 npm / pnpm | 第三方库以 vendor 形式随仓库分发 |
+
+**工具运行时**
+
+| 组件 | 技术 | 用途 |
+| --- | --- | --- |
+| Python | Python 3.10+ / venv / pip | `api-fuzzer` 等 Python 类工具配方，依赖见 `requirements.txt` |
+| 工具定义 | YAML 配方 + YAML 角色提示词 | `tools/` 声明入参、命令与输出处理，`roles/` 约束工具集 |
+| Skills | agentskills.io 目录结构 | `skills/` 下的 SKILL.md 由 skill 工具按需加载 |
+
+**部署**
+
+| 项 | 说明 |
+| --- | --- |
+| 产物 | 单个可执行文件 + `web/` 静态资源 + `roles/` `skills/` `tools/` 配置 |
+| 启动 | `run.sh` 一键（校验依赖 → 建 venv → 编译 → 启动），或直接运行二进制 |
+| TLS | 默认内存自签证书，可在 `server.tls_cert_path` / `server.tls_key_path` 换正式证书 |
+| 进程隔离 | Windows Job Object / Linux cgroup，限制子进程数量与资源 |
+
 ## 环境要求
 
 - Go 1.25+（以 `go.mod` 为准）
@@ -50,13 +98,13 @@ cp config.example.yaml config.yaml
 #          model: "deepseek-chat"
 
 # 3. 构建并启动
-go build -o cyberstrike-ai ./cmd/server
-./cyberstrike-ai --https
+go build -o penetration-testing-ai ./cmd/server
+./penetration-testing-ai --https
 ```
 
 浏览器打开 `https://127.0.0.1:8080/`，首次访问需接受本地自签证书。
 
-默认 HTTPS；只要明文 HTTP 用 `--http`。手动启动也可用环境变量 `CYBERSTRIKE_HTTPS=1` 开启 HTTPS。
+默认 HTTPS；只要明文 HTTP 用 `--http`。手动启动也可用环境变量 `PTAI_HTTPS=1` 开启 HTTPS。
 
 一键脚本（Linux / macOS）：`./run.sh`，脚本会自动创建 `venv/`、安装依赖、编译并启动。
 

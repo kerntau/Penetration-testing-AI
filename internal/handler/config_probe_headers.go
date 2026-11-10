@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 	"fmt"
 	"strings"
 )

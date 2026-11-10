@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"cyberstrike-ai/internal/config"
+	"penetration-testing-ai/internal/config"
 )
 
 // sessionHeaderPlaceholder 是自定义请求头值里代表「当前对话 ID」的占位符。
