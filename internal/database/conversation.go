@@ -55,7 +55,7 @@ func (db *DB) CreateConversation(title string, meta ConversationCreateMeta) (*Co
 
 	_, err := db.Exec(
 		"INSERT INTO conversations (id, title, created_at, updated_at, project_id, role_name, agent_mode) VALUES (?, ?, ?, ?, ?, ?, ?)",
-		id, title, now, now, projectID, roleName, agentMode,
+		id, title, now, now, nullIfEmpty(projectID), roleName, agentMode,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("创建对话失败: %w", err)

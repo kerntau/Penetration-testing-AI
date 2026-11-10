@@ -206,6 +206,9 @@ func (db *DB) initTables() error {
 	if err := db.dropRemovedFeatureTables(); err != nil {
 		return fmt.Errorf("清理已下线功能的历史表失败: %w", err)
 	}
+	if err := db.repairRemovedForeignKeys(); err != nil {
+		return fmt.Errorf("重建过期外键失败: %w", err)
+	}
 	if err := db.reconcileSchema(applicationSchema); err != nil {
 		return err
 	}
