@@ -1324,18 +1324,10 @@ async function editRole(roleName) {
     document.getElementById('role-name').value = role.name;
     document.getElementById('role-name').disabled = true; // 编辑时不允许修改名称
     document.getElementById('role-description').value = role.description || '';
-    // 处理icon字段：如果是Unicode转义格式，转换为emoji；否则直接使用
-    let iconValue = role.icon || '';
-    if (iconValue && iconValue.startsWith('\\U')) {
-        // 转换Unicode转义格式（如 \U0001F3C6）为emoji
-        try {
-            const codePoint = parseInt(iconValue.substring(2), 16);
-            iconValue = String.fromCodePoint(codePoint);
-        } catch (e) {
-            // 如果转换失败，使用原值
-        }
-    }
-    document.getElementById('role-icon').value = iconValue;
+    // 角色标识只接受 1–2 个普通字符；历史 emoji 图标不再回填
+    const rawIcon = String(role.icon || '');
+    const cleanIcon = /\p{Extended_Pictographic}/u.test(rawIcon) ? '' : rawIcon.trim().slice(0, 2);
+    document.getElementById('role-icon').value = cleanIcon;
     document.getElementById('role-user-prompt').value = role.user_prompt || '';
     document.getElementById('role-enabled').checked = role.enabled !== false;
 
@@ -1583,16 +1575,7 @@ async function saveRole() {
     }
 
     const description = document.getElementById('role-description').value.trim();
-    let icon = document.getElementById('role-icon').value.trim();
-    // 将emoji转换为Unicode转义格式以匹配YAML格式（如 \U0001F3C6）
-    if (icon) {
-        // 获取第一个字符的Unicode代码点（处理emoji可能是多个字符的情况）
-        const codePoint = icon.codePointAt(0);
-        if (codePoint && codePoint > 0x7F) {
-            // 转换为8位十六进制格式（\U0001F3C6）
-            icon = '\\U' + codePoint.toString(16).toUpperCase().padStart(8, '0');
-        }
-    }
+    const icon = document.getElementById('role-icon').value.trim().slice(0, 2);
     const userPrompt = document.getElementById('role-user-prompt').value.trim();
     const enabled = document.getElementById('role-enabled').checked;
     const workflowIdEl = document.getElementById('role-workflow-id');
