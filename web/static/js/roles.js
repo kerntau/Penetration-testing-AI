@@ -495,9 +495,6 @@ function toggleRoleSelectionPanel() {
     const isHidden = !isRoleSelectionPanelOpen();
     
     if (isHidden) {
-        if (typeof closeChatReasoningPanel === 'function') {
-            closeChatReasoningPanel();
-        }
         renderRoleSelectionSidebar();
         panel.style.display = 'flex'; // 使用flex布局
         // 添加打开状态的视觉反馈

@@ -205,7 +205,6 @@ function populateChatAIChannelSelect(ai) {
     try { stored = localStorage.getItem(AI_CHANNEL_STORAGE_KEY) || ''; } catch (e) {}
     stored = resolveChatAIChannelId(stored);
     select.value = stored || '';
-    refreshSessionSettingsSelects();
     updateChatReasoningSummary();
 }
 
@@ -568,7 +567,6 @@ async function selectChatAIChannel(channelId) {
     const resolved = resolveChatAIChannelId(channelId);
     select.value = resolved || '';
     persistChatAIChannelPref();
-    refreshSessionSettingsSelects();
     updateChatSystemModelPickerValues();
     openChatSystemModelView('main');
     setChatSystemModelStatus(chatTranslate('chat.systemModelLoading', '正在获取模型列表…'), 'loading');
@@ -778,7 +776,6 @@ async function openChatSystemModelPicker(event) {
         window.clearTimeout(chatSystemModelCloseTimer);
         chatSystemModelCloseTimer = null;
     }
-    if (typeof closeChatReasoningPanel === 'function') closeChatReasoningPanel();
     ui.menu.hidden = false;
     ui.button.classList.add('active');
     ui.button.setAttribute('aria-expanded', 'true');
@@ -999,7 +996,6 @@ function restoreChatReasoningControlsFromStorage() {
                 e.value = v;
             }
         }
-        refreshSessionSettingsSelects();
         updateChatReasoningSummary();
     } catch (err) { /* ignore */ }
 }
@@ -1010,7 +1006,6 @@ function persistChatReasoningPrefs() {
         const elEff = document.getElementById('chat-reasoning-effort');
         if (m) localStorage.setItem(REASONING_MODE_LS, m.value || 'default');
         if (elEff) localStorage.setItem(REASONING_EFFORT_LS, elEff.value || '');
-        refreshSessionSettingsSelects();
         updateChatReasoningSummary();
     } catch (err) { /* ignore */ }
 }
@@ -1040,16 +1035,11 @@ if (typeof window !== 'undefined') {
     window.populateChatAIChannelSelect = populateChatAIChannelSelect;
     window.persistChatReasoningPrefs = persistChatReasoningPrefs;
     window.buildReasoningRequestPayload = buildReasoningRequestPayload;
-    window.closeChatReasoningPanel = closeChatReasoningPanel;
-    window.toggleChatReasoningPanel = toggleChatReasoningPanel;
-    window.toggleConversationReasoningCard = toggleConversationReasoningCard;
     window.updateChatReasoningSummary = updateChatReasoningSummary;
     window.updateChatComposerSessionShortcuts = updateChatComposerSessionShortcuts;
-    window.openChatSessionSettings = openChatSessionSettings;
     window.openChatSystemModelPicker = openChatSystemModelPicker;
     window.openChatSystemModelView = openChatSystemModelView;
     window.closeChatSystemModelPicker = closeChatSystemModelPicker;
-    window.refreshSessionSettingsSelects = refreshSessionSettingsSelects;
     window.updateChatPrimaryActionState = updateChatPrimaryActionState;
 }
 
@@ -6840,7 +6830,4 @@ if (typeof window !== 'undefined') {
     window.renameConversation = renameConversation;
     window.closeConversationRenameModal = closeConversationRenameModal;
     window.saveConversationRename = saveConversationRename;
-    window.refreshConversationProjectFilter = refreshConversationProjectFilter;
-    window.refreshAllProjectFilterSelects = refreshAllProjectFilterSelects;
-    window.onConversationProjectFilterChange = onConversationProjectFilterChange;
 }
