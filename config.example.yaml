@@ -15,22 +15,21 @@ version: "v1.7.24"
 # 服务器配置
 server:
   host: 0.0.0.0 # 监听地址，0.0.0.0 表示监听所有网络接口
-  port: 8080 # 服务端口；未启用 TLS 时为 http://localhost:8080
-  # 其他可信 Web 集成的精确 Origin。Chromium 浏览器插件会自动识别，无需配置；不要使用通配符。
+  port: 8080 # 服务端口；默认 http://localhost:8080
+  # 其他可信 Web 集成的精确 Origin，不要使用通配符。
   # cors_allowed_origins:
   #   - https://trusted-integration.example
-  # --- 可选：HTTPS + HTTP/2（缓解浏览器对同源 HTTP/1.1 的并发连接数限制，多路 Deep 流式更稳）---
-  # 启用 TLS 的条件（满足其一即可）：tls_enabled: true，或 tls_auto_self_sign: true，或同时配置了 tls_cert_path + tls_key_path。
-  # 启用后请用 https://127.0.0.1:<本端口>/ 访问；若仍用 http:// 访问同端口，将自动 308 跳转到 HTTPS（可用 tls_http_redirect: false 关闭）。
-  tls_enabled: true
-  # 启用 HTTPS 时，明文 HTTP 是否自动跳转到 HTTPS（默认 true；同端口嗅探 TLS/HTTP 后分流）
-  # tls_http_redirect: true
-  # 方式 A（推荐生产）：PEM 证书与私钥路径
+  # --- 可选：HTTPS ---
+  # 本地开发默认明文 HTTP；需要 HTTPS 时把 tls_enabled 设为 true 并配置证书，
+  # 或启动时加 --https 使用内存自签证书（浏览器会提示不受信任）。
+  tls_enabled: false
+  # 方式 A（生产）：PEM 证书与私钥路径
   # tls_cert_path: /path/to/fullchain.pem
   # tls_key_path: /path/to/privkey.pem
-  # 方式 B（仅本地/测试）：无证书文件时内存自签（浏览器会提示不受信任；SAN 含 localhost / 127.0.0.1）
-  tls_auto_self_sign: true
-# 认证配置
+  # 方式 B（仅本地/测试）：无证书文件时使用内存自签证书
+  # tls_auto_self_sign: true
+  # 启用 HTTPS 后，明文 HTTP 是否自动跳转到 HTTPS（默认 true）
+  # tls_http_redirect: true
 log:
   level: info # 日志级别: debug(调试), info(信息), warn(警告), error(错误)
   output: stdout # 日志输出位置: stdout(标准输出), stderr(标准错误), 或文件路径

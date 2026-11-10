@@ -45,7 +45,7 @@ An AI-driven 渗透测试 workbench: turn natural-language intent into auditable
 | Token counting | tiktoken-go | Context budgeting and token usage stats |
 | JSON | bytedance/sonic (falls back to encoding/json) | Hot-path serialization |
 | Process & terminal | creack/pty, golang.org/x/sys | POSIX live shell; Windows Job / Linux cgroup isolation |
-| Network | net/http + HTTP/2 (TLS) | HTTPS main site, SSE streaming |
+| Network | net/http + HTTP/2 (TLS) | HTTP/HTTPS main site, SSE streaming |
 
 **Frontend**
 
@@ -72,7 +72,7 @@ An AI-driven 渗透测试 workbench: turn natural-language intent into auditable
 | --- | --- |
 | Artifacts | One executable + `web/` assets + `roles/` `skills/` `tools/` config |
 | Start | `run.sh` (check deps → venv → build → run) or run the binary directly |
-| TLS | In-memory self-signed certificate by default; set `server.tls_cert_path` / `server.tls_key_path` for real certs |
+| TLS | Plain HTTP by default; enable with `tls_enabled: true` and real certificates via `server.tls_cert_path` / `server.tls_key_path` |
 | Isolation | Windows Job Object / Linux cgroup, capping child processes and resources |
 
 ## Requirements
@@ -99,12 +99,12 @@ cp config.example.yaml config.yaml
 
 # 3. Build and run
 go build -o penetration-testing-ai ./cmd/server
-./penetration-testing-ai --https
+./penetration-testing-ai
 ```
 
-Open `https://127.0.0.1:8080/` and accept the local self-signed certificate once.
+Open `http://127.0.0.1:8080/`.
 
-HTTPS is the default; pass `--http` for plain HTTP, or set `PTAI_HTTPS=1`.
+Plain HTTP is the default, which suits local development and coursework. Pass `--https` for an in-memory self-signed certificate (the browser will warn), set `PTAI_HTTPS=1`, or configure real certificates in `config.yaml`.
 
 One-shot script (Linux / macOS): `./run.sh` — creates `venv/`, installs dependencies, builds and starts.
 
@@ -112,7 +112,7 @@ One-shot script (Linux / macOS): `./run.sh` — creates `venv/`, installs depend
 
 | Port | Purpose | Notes |
 | --- | --- | --- |
-| 8080 | Web console and REST API | HTTPS by default (self-signed); configure real certificates via `server.tls_*` |
+| 8080 | Web console and REST API | Plain HTTP by default; HTTPS once TLS is enabled, see `server.tls_*` |
 | 8081 | MCP server | For external MCP clients; toggled by `mcp.enabled` |
 
 ## Layout

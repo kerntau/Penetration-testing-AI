@@ -85,7 +85,7 @@ main() {
     echo ""
     echo "=========================================="
     echo "  Penetration-testing-AI 部署与启动"
-    echo "  默认 HTTPS（自签证书）；明文 HTTP: ./run.sh --http"
+    echo "  默认 HTTP；需要 HTTPS 时: ./run.sh --https"
     echo "=========================================="
     echo ""
 

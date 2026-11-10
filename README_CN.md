@@ -45,7 +45,7 @@ AI 驱动的渗透测试工作台：把自然语言意图转成可审计的渗�
 | 令牌计数 | tiktoken-go | 上下文预算与 token 用量统计 |
 | JSON | bytedance/sonic（不支持时回落 encoding/json） | 高频序列化 |
 | 进程与终端 | creack/pty、golang.org/x/sys | POSIX 实时 shell、Windows Job / Linux cgroup 进程隔离 |
-| 网络 | net/http + HTTP/2（TLS） | 主站 HTTPS、SSE 流式输出 |
+| 网络 | net/http + HTTP/2（TLS） | 主站 HTTP/HTTPS、SSE 流式输出 |
 
 **前端**
 
@@ -72,7 +72,7 @@ AI 驱动的渗透测试工作台：把自然语言意图转成可审计的渗�
 | --- | --- |
 | 产物 | 单个可执行文件 + `web/` 静态资源 + `roles/` `skills/` `tools/` 配置 |
 | 启动 | `run.sh` 一键（校验依赖 → 建 venv → 编译 → 启动），或直接运行二进制 |
-| TLS | 默认内存自签证书，可在 `server.tls_cert_path` / `server.tls_key_path` 换正式证书 |
+| TLS | 默认明文 HTTP；需要 HTTPS 时把 `tls_enabled` 设为 true，并用 `server.tls_cert_path` / `server.tls_key_path` 配置证书 |
 | 进程隔离 | Windows Job Object / Linux cgroup，限制子进程数量与资源 |
 
 ## 环境要求
@@ -99,12 +99,12 @@ cp config.example.yaml config.yaml
 
 # 3. 构建并启动
 go build -o penetration-testing-ai ./cmd/server
-./penetration-testing-ai --https
+./penetration-testing-ai
 ```
 
-浏览器打开 `https://127.0.0.1:8080/`，首次访问需接受本地自签证书。
+浏览器打开 `http://127.0.0.1:8080/`。
 
-默认 HTTPS；只要明文 HTTP 用 `--http`。手动启动也可用环境变量 `PTAI_HTTPS=1` 开启 HTTPS。
+默认明文 HTTP，适合本地开发与课程设计；需要 HTTPS 时加 `--https`（内存自签证书，浏览器会提示不受信任），或用环境变量 `PTAI_HTTPS=1`，或在 `config.yaml` 里配置正式证书。
 
 一键脚本（Linux / macOS）：`./run.sh`，脚本会自动创建 `venv/`、安装依赖、编译并启动。
 
@@ -112,7 +112,7 @@ go build -o penetration-testing-ai ./cmd/server
 
 | 端口 | 用途 | 说明 |
 | --- | --- | --- |
-| 8080 | Web 控制台与 REST API | 默认 HTTPS（自签证书），可在 `server.tls_*` 配置正式证书 |
+| 8080 | Web 控制台与 REST API | 默认明文 HTTP；启用 TLS 后改为 HTTPS，证书见 `server.tls_*` |
 | 8081 | MCP 服务端 | 供外部 MCP 客户端接入，`mcp.enabled` 控制开关 |
 
 ## 目录结构
