@@ -342,6 +342,12 @@ function handleRoleChange(roleName) {
     }
 }
 
+// 角色标识：取角色名首字，避免使用 emoji 图标
+function roleBadgeText(role) {
+    const name = String((role && role.name) || '').trim();
+    return name ? name.charAt(0) : '角';
+}
+
 // 更新角色选择器显示
 function updateRoleSelectorDisplay() {
     const roleSelectorBtn = document.getElementById('role-selector-btn');
@@ -358,23 +364,7 @@ function updateRoleSelectorDisplay() {
     }
 
     if (selectedRole) {
-        // 使用配置中的图标，如果没有则使用默认图标
-        let icon = selectedRole.icon || '🔵';
-        // 如果 icon 是 Unicode 转义格式（\U0001F3C6），需要转换为 emoji
-        if (icon && typeof icon === 'string') {
-            const unicodeMatch = icon.match(/^"?\\U([0-9A-F]{8})"?$/i);
-            if (unicodeMatch) {
-                try {
-                    const codePoint = parseInt(unicodeMatch[1], 16);
-                    icon = String.fromCodePoint(codePoint);
-                } catch (e) {
-                    // 如果转换失败，使用默认图标
-                    console.warn('转换 icon Unicode 转义失败:', icon, e);
-                    icon = '🔵';
-                }
-            }
-        }
-        roleSelectorIcon.textContent = icon;
+        roleSelectorIcon.textContent = roleBadgeText(selectedRole);
         const isDefaultRole = selectedRole.name === '默认' || !selectedRole.name;
         const displayName = isDefaultRole && typeof window.t === 'function'
             ? window.t('chat.defaultRole') : (selectedRole.name || (typeof window.t === 'function' ? window.t('chat.defaultRole') : '默认'));
@@ -384,7 +374,7 @@ function updateRoleSelectorDisplay() {
     } else {
         // 默认角色
         roleSelectorText.setAttribute('data-i18n-skip-text', 'false');
-        roleSelectorIcon.textContent = '🔵';
+ roleSelectorIcon.textContent = '默';
         roleSelectorText.textContent = typeof window.t === 'function' ? window.t('chat.defaultRole') : '默认';
     }
 }
@@ -397,27 +387,9 @@ function renderRoleSelectionSidebar() {
     // 清空列表
     roleList.innerHTML = '';
 
-    // 根据角色配置获取图标，如果没有配置则使用默认图标
+    // 角色标识使用角色名首字，不再依赖 emoji 图标
     function getRoleIcon(role) {
-        if (role.icon) {
-            // 如果 icon 是 Unicode 转义格式（\U0001F3C6），需要转换为 emoji
-            let icon = role.icon;
-            // 检查是否是 Unicode 转义格式（可能包含引号）
-            const unicodeMatch = icon.match(/^"?\\U([0-9A-F]{8})"?$/i);
-            if (unicodeMatch) {
-                try {
-                    const codePoint = parseInt(unicodeMatch[1], 16);
-                    icon = String.fromCodePoint(codePoint);
-                } catch (e) {
-                    // 如果转换失败，使用原值
-                    console.warn('转换 icon Unicode 转义失败:', icon, e);
-                }
-            }
-            return icon;
-        }
-        // 如果没有配置图标，根据角色名称的首字符生成默认图标
-        // 使用一些通用的默认图标
-        return '👤';
+        return roleBadgeText(role);
     }
     
     // 对角色进行排序：默认角色第一个，其他按名称排序
@@ -595,22 +567,7 @@ function renderRolesList() {
     
     rolesList.innerHTML = sortedRoles.map(role => {
         const plainDesc = rolePlainDescription(role);
-        // 获取角色图标，如果是Unicode转义格式则转换为emoji
-        let roleIcon = role.icon || '👤';
-        if (roleIcon && typeof roleIcon === 'string') {
-            // 检查是否是 Unicode 转义格式（可能包含引号）
-            const unicodeMatch = roleIcon.match(/^"?\\U([0-9A-F]{8})"?$/i);
-            if (unicodeMatch) {
-                try {
-                    const codePoint = parseInt(unicodeMatch[1], 16);
-                    roleIcon = String.fromCodePoint(codePoint);
-                } catch (e) {
-                    // 如果转换失败，使用默认图标
-                    console.warn('转换 icon Unicode 转义失败:', roleIcon, e);
-                    roleIcon = '👤';
-                }
-            }
-        }
+        const roleIcon = roleBadgeText(role);
 
         // 获取工具列表显示
         let toolsDisplay = '';
@@ -1187,12 +1144,12 @@ function updateRoleToolsStats() {
     if (roleUsesAllTools) {
         statsEl.innerHTML = `
             <div class="role-tools-stats-row">
-                <span title="${escapeHtml(_t('roleModal.statsPageLinkedTitle'))}">✅ ${_t('roleModal.statsPageLinked', { current: pageChecked, total: pageTotal })}</span>
+ <span title="${escapeHtml(_t('roleModal.statsPageLinkedTitle'))}"> ${_t('roleModal.statsPageLinked', { current: pageChecked, total: pageTotal })}</span>
             </div>
             <div class="role-tools-stats-row">
-                <span title="${escapeHtml(_t('roleModal.statsRoleUsesAllTitle'))}">📊 ${_t('roleModal.statsRoleUsesAll', { mcpOn: mcpOnMax, all: grandAll })}</span>
+ <span title="${escapeHtml(_t('roleModal.statsRoleUsesAllTitle'))}"> ${_t('roleModal.statsRoleUsesAll', { mcpOn: mcpOnMax, all: grandAll })}</span>
             </div>
-            <div class="role-tools-stats-hint">📋 ${escapeHtml(scopeLine)}</div>
+ <div class="role-tools-stats-hint"> ${escapeHtml(scopeLine)}</div>
         `;
         return;
     }
@@ -1220,15 +1177,15 @@ function updateRoleToolsStats() {
 
     const roleRow =
         mcpOnMax > 0
-            ? `<span title="${escapeHtml(_t('roleModal.statsRoleLinkedTitle'))}">📊 ${_t('roleModal.statsRoleLinked', { current: roleLinked, max: mcpOnMax })}</span>`
-            : `<span title="${escapeHtml(_t('roleModal.statsRoleLinkedNoMaxTitle'))}">📊 ${_t('roleModal.statsRoleLinkedNoMax', { current: roleLinked })}</span>`;
+ ? `<span title="${escapeHtml(_t('roleModal.statsRoleLinkedTitle'))}"> ${_t('roleModal.statsRoleLinked', { current: roleLinked, max: mcpOnMax })}</span>`
+ : `<span title="${escapeHtml(_t('roleModal.statsRoleLinkedNoMaxTitle'))}"> ${_t('roleModal.statsRoleLinkedNoMax', { current: roleLinked })}</span>`;
 
     statsEl.innerHTML = `
         <div class="role-tools-stats-row">
-            <span title="${escapeHtml(_t('roleModal.statsPageLinkedTitle'))}">✅ ${_t('roleModal.statsPageLinked', { current: pageChecked, total: pageTotal })}</span>
+ <span title="${escapeHtml(_t('roleModal.statsPageLinkedTitle'))}"> ${_t('roleModal.statsPageLinked', { current: pageChecked, total: pageTotal })}</span>
         </div>
         <div class="role-tools-stats-row">${roleRow}</div>
-        <div class="role-tools-stats-hint">📋 ${escapeHtml(scopeLine)}</div>
+ <div class="role-tools-stats-hint"> ${escapeHtml(scopeLine)}</div>
     `;
 }
 

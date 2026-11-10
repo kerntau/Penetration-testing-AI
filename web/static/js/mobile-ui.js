@@ -513,7 +513,7 @@
         });
     }
 
-    /* 菜单搜索：按文本过滤 nav-item / nav-submenu-item */
+    /* 菜单搜索：按文本过滤扁平的导航项 */
     function filterNav(keyword) {
         var sidebar = $('#main-sidebar');
         if (!sidebar) return;
@@ -522,31 +522,17 @@
 
         items.forEach(function (item) {
             item.classList.remove('m-nav-hidden');
-            var subs = $$('.nav-submenu-item', item);
-            /* 父项只按自身标题匹配，避免子项文本把父项误判为命中 */
-            var content = item.querySelector('.nav-item-content');
-            var selfText = ((content ? content.textContent : item.textContent) || '').toLowerCase();
+            var selfText = (item.textContent || '').toLowerCase();
             var selfHit = !q || selfText.indexOf(q) >= 0;
-            var subHit = false;
-
-            subs.forEach(function (sub) {
-                var hit = !q || (sub.textContent || '').toLowerCase().indexOf(q) >= 0;
-                sub.classList.toggle('m-nav-hit', !!q && hit);
-                /* 父项自身命中时整组保留，避免展开后是空组 */
-                sub.classList.toggle('m-nav-hidden', !!q && !hit && !selfHit);
-                if (hit && q) subHit = true;
-            });
 
             if (!q) {
                 item.classList.remove('m-nav-hit');
                 return;
             }
 
-            if (selfHit || subHit) {
+            if (selfHit) {
                 item.classList.remove('m-nav-hidden');
-                item.classList.toggle('m-nav-hit', selfHit && !subHit);
-                /* 命中子项时自动展开分组 */
-                if (subHit) item.classList.add('expanded');
+                item.classList.add('m-nav-hit');
             } else {
                 item.classList.add('m-nav-hidden');
             }
@@ -1024,13 +1010,8 @@
         if (!sidebar) return;
         sidebar.addEventListener('click', function (e) {
             if (!isMobile()) return;
-            var target = e.target.closest('.nav-submenu-item');
+            var target = e.target.closest('.nav-item');
             if (target && target.dataset.page) {
-                setTimeout(closeDrawer, 60);
-                return;
-            }
-            var item = e.target.closest('.nav-item-content');
-            if (item && item.closest('.nav-item') && !item.closest('.nav-item-has-submenu')) {
                 setTimeout(closeDrawer, 60);
             }
         });

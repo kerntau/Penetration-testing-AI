@@ -92,8 +92,7 @@
     /* 触摸设备：去掉 300ms 点击延迟与高亮块 */
     a,
     button,
-    .nav-item-content,
-    .nav-submenu-item,
+    .nav-item,
     [onclick],
     [role="button"] {
         -webkit-tap-highlight-color: transparent;
@@ -129,8 +128,7 @@
     .btn-secondary,
     .btn-danger,
     .btn-small,
-    .nav-item-content,
-    .nav-submenu-item,
+    .nav-item,
     .user-menu-item {
         min-height: var(--m-touch);
     }
@@ -341,8 +339,7 @@
         width: var(--m-drawer-w) !important;
     }
 
-    .main-sidebar.collapsed .nav-item-content span,
-    .main-sidebar.collapsed .nav-submenu-item {
+    .main-sidebar.collapsed .nav-item span {
         display: revert;
     }
 
@@ -431,7 +428,7 @@
         color: var(--text-muted);
     }
 
-    .nav-item-content {
+    .nav-item {
         padding: 11px 12px;
         min-height: 46px;
         font-size: 0.95rem;
@@ -439,34 +436,19 @@
         gap: 12px;
     }
 
-    .nav-item-content svg {
+    .nav-item svg {
         width: 20px;
         height: 20px;
         flex-shrink: 0;
     }
 
-    .nav-submenu-item {
-        padding: 10px 12px 10px 44px;
-        /* 原来是 42px——本层自己定的 --m-touch(44px) 下限被自己漏掉了一处 */
-        min-height: var(--m-touch);
-        font-size: 0.9rem;
-        border-radius: 8px;
-    }
-
-    .nav-item.active > .nav-item-content,
-    .nav-item-content.active {
+    .nav-item.active {
         background: color-mix(in srgb, var(--accent-color) 14%, transparent);
         color: var(--accent-color);
     }
 
-    .nav-submenu-item.active {
-        background: color-mix(in srgb, var(--accent-color) 12%, transparent);
-        color: var(--accent-color);
-    }
-
     /* 菜单搜索命中的项 */
-    .m-nav-hit > .nav-item-content,
-    .nav-submenu-item.m-nav-hit {
+    .nav-item.m-nav-hit {
         outline: 1px solid color-mix(in srgb, var(--accent-color) 45%, transparent);
     }
 
@@ -1585,7 +1567,7 @@ body.m-panel-open .chat-input-container {
     /* 18.2b 第九轮（审计覆盖从假 14 页修成真实 29 页后）新暴露的小字。
        asset-overview 的资产类型统计标签 11px、协议表头 9px；
        agents-management 的角色徽章 11px；platform-rbac 的状态胶囊 11px。
-       图标字符（如 .tool-expand-icon 的 ▶ 10px）不属于文本，不在此列。 */
+       图标字符（如 .tool-expand-icon 的三角标记 10px）不属于文本，不在此列。 */
     .asset-type-item span,
     .asset-protocol-compact__header p,
     .asset-panel-meta,
@@ -2801,7 +2783,7 @@ body.m-panel-open .chat-input-container {
     }
 
     /* 25.2 mcp-management 统计条用 flex-wrap:nowrap，
-       「📌 常驻: 49」right=409、「🔗 已连接: 0」right=468，都越过屏幕右缘。 */
+       「常驻: 49」right=409、「已连接: 0」right=468，都越过屏幕右缘。 */
     #tools-stats,
     .external-mcp-stats {
         flex-wrap: wrap !important;
@@ -2873,7 +2855,7 @@ body.m-panel-open .chat-input-container {
     }
 
     /* 25.5 第九轮第二遍：新暴露页面里剩下的文本类小字也纳入 12px 下限。
-       `.tool-expand-icon` 的 ▶（10px）是图标字符、`svg text`（9px）是图表内标注，
+       `.tool-expand-icon` 的三角标记（10px）是图标字符、`svg text`（9px）是图表内标注，
        两者属图形元素，不受文本字号下限约束，保持原尺寸。 */
     .skill-card-tags span,        /* 11.52px 技能标签 */
     .c2-tasks-field span,         /* 11px 筛选字段标题 */
@@ -3272,8 +3254,7 @@ html[data-theme="dark"] {
     .btn-secondary,
     .btn-danger,
     .btn-small,
-    .nav-item-content,
-    .nav-submenu-item {
+    .nav-item {
         transition: transform 0.12s ease, background-color 0.12s ease, color 0.16s ease, opacity 0.12s ease;
     }
 

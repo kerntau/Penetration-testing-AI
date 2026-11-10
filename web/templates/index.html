@@ -52,7 +52,6 @@
                     <h1 class="brand-wordmark brand-wordmark--lg">
                         <span class="brand-wordmark__core">Penetration-testing</span><span class="brand-wordmark__ai">-AI</span>
                     </h1>
-                    <span class="version-badge" title="当前版本">{{.Version}}</span>
                 </div>
                 <div class="header-right">
                     <div class="header-actions">
@@ -71,10 +70,8 @@
                             <span id="theme-toggle-label">跟随系统</span>
                         </button>
                         </div>
-                        </div>
                     </div>
                 </div>
-            </div>
         </header>
 
         <div class="main-layout">
@@ -86,129 +83,88 @@
                     </svg>
                 </div>
                 <nav class="main-sidebar-nav">
-                    <div class="nav-section-label" role="presentation">
-                        <span>工作台</span>
-                    </div>
-                    <div class="nav-item" data-page="dashboard">
-                        <div class="nav-item-content" data-title="仪表盘" onclick="switchPage('dashboard')">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="3" width="7" height="9"></rect>
-                                <rect x="14" y="3" width="7" height="5"></rect>
-                                <rect x="14" y="12" width="7" height="9"></rect>
-                                <rect x="3" y="16" width="7" height="5"></rect>
-                            </svg>
-                            <span>仪表盘</span>
-                        </div>
-                    </div>
-                    <div class="nav-item" data-page="chat">
-                        <div class="nav-item-content" data-title="对话" onclick="switchPage('chat')">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                            </svg>
-                            <span>对话</span>
-                        </div>
-                    </div>
-                    <div class="nav-item nav-item-has-submenu" data-page="security" data-require-permission="config:read">
-                        <div class="nav-item-content" data-title="安全防护" onclick="window.toggleSubmenu('security')">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <rect x="4" y="10" width="16" height="11" rx="2"></rect>
-                                <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"></path>
-                            </svg>
-                            <span>安全防护</span>
-                            <svg class="submenu-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </div>
-                        <div class="nav-submenu">
-                            <div class="nav-submenu-item" data-page="tool-guard" data-require-permission="config:read" onclick="switchPage('tool-guard')">调用拦截</div>
-                        </div>
-                    </div>
-                    <div class="nav-section-label" role="presentation">
-                        <span>安全作业</span>
-                    </div>
-                    <div class="nav-item" data-page="vulnerabilities">
-                        <div class="nav-item-content" data-title="漏洞管理" onclick="switchPage('vulnerabilities')">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                                <path d="M9 12l2 2 4-4"></path>
-                            </svg>
-                            <span>漏洞管理</span>
-                        </div>
-                    </div>
-                    <div class="nav-section-label" role="presentation">
-                        <span>能力中心</span>
-                    </div>
-                    <div class="nav-item nav-item-has-submenu" data-page="mcp">
-                        <div class="nav-item-content" data-title="MCP" onclick="window.toggleSubmenu('mcp')">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-                            </svg>
-                            <span>MCP</span>
-                            <svg class="submenu-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <div class="nav-submenu">
-                            <div class="nav-submenu-item" data-page="mcp-monitor" onclick="switchPage('mcp-monitor')">
-                                <span>MCP状态监控</span>
-                            </div>
-                            <div class="nav-submenu-item" data-page="mcp-management" onclick="switchPage('mcp-management')">
-                                <span>MCP管理</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="nav-item nav-item-has-submenu" data-page="skills">
-                        <div class="nav-item-content" data-title="技能" onclick="window.toggleSubmenu('skills')">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <line x1="16" y1="13" x2="8" y2="13"></line>
-                                <line x1="16" y1="17" x2="8" y2="17"></line>
-                                <polyline points="10 9 9 9 8 9"></polyline>
-                            </svg>
-                            <span>技能</span>
-                            <svg class="submenu-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <div class="nav-submenu">
-                            <div class="nav-submenu-item" data-page="skills-monitor" onclick="switchPage('skills-monitor')">
-                                <span>技能状态</span>
-                            </div>
-                            <div class="nav-submenu-item" data-page="skills-management" onclick="switchPage('skills-management')">
-                                <span>技能管理</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="nav-item nav-item-has-submenu" data-page="roles">
-                        <div class="nav-item-content" data-title="角色" onclick="window.toggleSubmenu('roles')">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="9" cy="7" r="4"></circle>
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                            </svg>
-                            <span>角色</span>
-                            <svg class="submenu-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <div class="nav-submenu">
-                            <div class="nav-submenu-item" data-page="roles-management" onclick="switchPage('roles-management')">
-                                <span>角色管理</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="nav-section-label" role="presentation">
-                        <span>平台管理</span>
-                    </div>
-                    <div class="nav-item" data-page="settings">
-                        <div class="nav-item-content" data-title="系统设置" onclick="switchPage('settings')">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="3"></circle>
-                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                            </svg>
-                            <span>系统设置</span>
-                        </div>
-                    </div>
+                    <div class="nav-section-label" role="presentation"><span>工作台</span></div>
+                    <button type="button" class="nav-item active" data-page="dashboard" data-title="仪表盘" onclick="switchPage('dashboard')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="3" y="3" width="7" height="9" rx="1.5"></rect>
+                            <rect x="14" y="3" width="7" height="5" rx="1.5"></rect>
+                            <rect x="14" y="12" width="7" height="9" rx="1.5"></rect>
+                            <rect x="3" y="16" width="7" height="5" rx="1.5"></rect>
+                        </svg>
+                        <span>仪表盘</span>
+                    </button>
+                    <button type="button" class="nav-item" data-page="chat" data-title="对话" onclick="switchPage('chat')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <span>对话</span>
+                    </button>
+
+                    <div class="nav-section-label" role="presentation"><span>安全作业</span></div>
+                    <button type="button" class="nav-item" data-page="vulnerabilities" data-title="漏洞管理" onclick="switchPage('vulnerabilities')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            <path d="M9 12l2 2 4-4"></path>
+                        </svg>
+                        <span>漏洞管理</span>
+                    </button>
+                    <button type="button" class="nav-item" data-page="tool-guard" data-title="调用拦截" data-require-permission="config:read" onclick="switchPage('tool-guard')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="4" y="10" width="16" height="11" rx="2"></rect>
+                            <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"></path>
+                        </svg>
+                        <span>调用拦截</span>
+                    </button>
+
+                    <div class="nav-section-label" role="presentation"><span>能力中心</span></div>
+                    <button type="button" class="nav-item" data-page="mcp-monitor" data-title="MCP 监控" onclick="switchPage('mcp-monitor')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 12h4l2.5 7 5-14 2.5 7h4"></path>
+                        </svg>
+                        <span>MCP 监控</span>
+                    </button>
+                    <button type="button" class="nav-item" data-page="mcp-management" data-title="MCP 管理" onclick="switchPage('mcp-management')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path>
+                        </svg>
+                        <span>MCP 管理</span>
+                    </button>
+                    <button type="button" class="nav-item" data-page="skills-monitor" data-title="技能状态" onclick="switchPage('skills-monitor')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 3v18h18"></path>
+                            <rect x="7" y="12" width="3" height="6" rx="1"></rect>
+                            <rect x="12" y="8" width="3" height="10" rx="1"></rect>
+                            <rect x="17" y="5" width="3" height="13" rx="1"></rect>
+                        </svg>
+                        <span>技能状态</span>
+                    </button>
+                    <button type="button" class="nav-item" data-page="skills-management" data-title="技能管理" onclick="switchPage('skills-management')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                        <span>技能管理</span>
+                    </button>
+                    <button type="button" class="nav-item" data-page="roles-management" data-title="角色管理" onclick="switchPage('roles-management')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <span>角色管理</span>
+                    </button>
+
+                    <div class="nav-section-label" role="presentation"><span>平台</span></div>
+                    <button type="button" class="nav-item" data-page="settings" data-title="系统设置" onclick="switchPage('settings')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                        <span>系统设置</span>
+                    </button>
                 </nav>
             </aside>
 
@@ -670,7 +626,7 @@
                                 <div class="chat-input-leading">
                                 <div id="role-selector-wrapper" class="role-selector-wrapper">
                                     <button type="button" id="role-selector-btn" class="role-selector-btn" onclick="toggleRoleSelectionPanel()" title="选择角色">
-                                        <span id="role-selector-icon" class="role-selector-icon">🔵</span>
+                                        <span id="role-selector-icon" class="role-selector-icon"></span>
                                         <span id="role-selector-text" class="role-selector-text">默认</span>
                                         <svg class="role-selector-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                             <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -964,7 +920,9 @@
                                     </div>
                                     <div class="search-box">
                                         <input type="text" id="tools-search" placeholder="搜索工具..." onkeypress="handleSearchKeyPress(event)" oninput="if(this.value.trim() === '') clearSearch()" />
-                                        <button class="btn-search" onclick="searchTools()" title="搜索">🔍</button>
+                                        <button class="btn-search" onclick="searchTools()" title="搜索" aria-label="搜索">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                                </button>
                                     </div>
                                     <div class="tools-stats" id="tools-stats"></div>
                                 </div>
@@ -2037,9 +1995,9 @@
                     <input type="text" id="role-description" placeholder="输入角色描述" />
                 </div>
                 <div class="form-group">
-                    <label for="role-icon">角色图标</label>
-                    <input type="text" id="role-icon" placeholder="输入emoji图标，例如: 🏆" maxlength="10" />
-                    <small class="form-hint">输入一个emoji作为角色的图标，将显示在角色选择器中。</small>
+                    <label for="role-icon">角色标识</label>
+                    <input type="text" id="role-icon" placeholder="留空则取角色名首字" maxlength="2" />
+                    <small class="form-hint">显示在角色卡片与选择器中的单字标识，留空时自动取角色名第一个字。</small>
                 </div>
                 <div class="form-group">
                     <label for="role-user-prompt">用户提示词</label>
@@ -2050,7 +2008,7 @@
                     <label>关联的工具（可选）</label>
                     <div id="role-tools-default-hint" class="role-tools-default-hint" style="display: none;">
                         <div class="role-tools-default-info">
-                            <span class="role-tools-default-icon">ℹ️</span>
+                                        <span class="role-tools-default-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span>
                             <div class="role-tools-default-content">
                                 <div class="role-tools-default-title">默认角色使用所有工具</div>
                                 <div class="role-tools-default-desc">默认角色会自动使用MCP管理中启用的所有工具，无需单独配置。</div>

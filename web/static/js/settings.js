@@ -1235,7 +1235,7 @@ async function loadToolsList(page = 1, searchKeyword = '', options = {}) {
     if (toolsList) {
         toolsList.setAttribute('aria-busy', 'true');
         if (!toolsList.querySelector('.tool-item')) {
-            toolsList.innerHTML = '<div class="tools-list-items"><div class="loading" style="padding: 20px; text-align: center; color: var(--text-muted);">⏳ ' + (typeof window.t === 'function' ? window.t('mcp.loadingTools') : '正在加载工具列表...') + '</div></div>';
+ toolsList.innerHTML = '<div class="tools-list-items"><div class="loading" style="padding: 20px; text-align: center; color: var(--text-muted);"> ' + (typeof window.t === 'function' ? window.t('mcp.loadingTools') : '正在加载工具列表...') + '</div></div>';
         }
     }
     
@@ -1456,7 +1456,7 @@ function renderToolsList() {
                         <span>${typeof window.t === 'function' ? window.t('mcp.alwaysVisibleLabel') : '常驻'}</span>
                     </label>
                     ${alwaysVisibleLocked ? `<span class="external-tool-badge" title="${typeof window.t === 'function' ? window.t('mcp.alwaysVisibleBuiltinHint') : '后端内置工具默认常驻，不可关闭'}">${typeof window.t === 'function' ? window.t('mcp.alwaysVisibleBuiltinLabel') : '内置默认'}</span>` : ''}
-                    <span class="tool-expand-icon">▶</span>
+ <span class="tool-expand-icon"></span>
                 </div>
                 <div class="tool-item-desc">${escapeHtml(tool.description || (typeof window.t === 'function' ? window.t('mcp.noDescription') : '无描述'))}</div>
                 <div class="tool-item-detail" style="display:none"></div>
@@ -1491,7 +1491,7 @@ function toggleToolDetail(infoEl, toolKey, isExternal, externalMcp, event) {
     const isOpen = detail.dataset.open === '1';
     detail.style.display = isOpen ? 'none' : 'block';
     detail.dataset.open = isOpen ? '0' : '1';
-    if (icon) icon.textContent = isOpen ? '▶' : '▼';
+ if (icon) icon.textContent = isOpen ? '' : '▼';
 
     // 首次展开时从后端按需加载
     if (!isOpen && !detail.dataset.rendered) {
@@ -1536,7 +1536,7 @@ function toggleToolDetail(infoEl, toolKey, isExternal, externalMcp, event) {
                             schemaHTML += `<tr>
                                 <td><code>${escapeHtml(key)}</code></td>
                                 <td>${escapeHtml(String(type))}</td>
-                                <td>${isReq ? '<span style="color:#28a745">✔</span>' : ''}</td>
+ <td>${isReq ? '<span style="color:#28a745"></span>' : ''}</td>
                                 <td>${escapeHtml(desc)}</td>
                             </tr>`;
                         });
@@ -1885,9 +1885,9 @@ async function updateToolsStats() {
     const tStats = typeof window.t === 'function' ? window.t : (k) => k;
     const pinnedCount = countUserAlwaysVisibleTools();
     statsEl.innerHTML = `
-        <span title="${tStats('mcp.currentPageEnabled')}">✅ ${tStats('mcp.currentPageEnabled')}: <strong>${currentPageEnabled}</strong> / ${currentPageTotal}</span>
-        <span title="${tStats('mcp.totalEnabled')}">📊 ${tStats('mcp.totalEnabled')}: <strong>${totalEnabled}</strong> / ${totalTools}</span>
-        <span title="${tStats('mcp.alwaysVisibleHint')}">📌 ${tStats('mcp.alwaysVisibleLabel')}: <strong>${pinnedCount}</strong></span>
+ <span title="${tStats('mcp.currentPageEnabled')}"> ${tStats('mcp.currentPageEnabled')}: <strong>${currentPageEnabled}</strong> / ${currentPageTotal}</span>
+ <span title="${tStats('mcp.totalEnabled')}"> ${tStats('mcp.totalEnabled')}: <strong>${totalEnabled}</strong> / ${totalTools}</span>
+ <span title="${tStats('mcp.alwaysVisibleHint')}"> ${tStats('mcp.alwaysVisibleLabel')}: <strong>${pinnedCount}</strong></span>
     `;
 }
 
@@ -4349,7 +4349,7 @@ function renderExternalMCPList(servers) {
     if (Object.keys(servers).length === 0) {
         if (layout) layout.classList.add('external-empty');
         const emptyT = typeof window.t === 'function' ? window.t : (k) => k;
-        list.innerHTML = '<div class="empty">📋 ' + emptyT('mcp.noExternalMCP') + '<br><span style="font-size: 0.875rem; margin-top: 8px; display: block;">' + emptyT('mcp.clickToAddExternal') + '</span></div>';
+ list.innerHTML = '<div class="empty"> ' + emptyT('mcp.noExternalMCP') + '<br><span style="font-size: 0.875rem; margin-top: 8px; display: block;">' + emptyT('mcp.clickToAddExternal') + '</span></div>';
         return;
     }
     if (layout) layout.classList.remove('external-empty');
@@ -4367,7 +4367,7 @@ function renderExternalMCPList(servers) {
                           status === 'error' ? statusT('mcp.connectionFailed') :
                           status === 'disabled' ? statusT('mcp.disabled') : statusT('mcp.disconnected');
         const transport = server.config.type || server.config.transport || (server.config.command ? 'stdio' : 'http');
-        const transportIcon = transport === 'stdio' ? '⚙️' : '🌐';
+ const transportIcon = transport === 'stdio' ? '' : '';
         
         const hasTools = server.tool_count !== undefined && server.tool_count > 0;
         const cardClickTitle = hasTools
@@ -4380,25 +4380,25 @@ function renderExternalMCPList(servers) {
             <div class="${cardClass}${selectedClass}" data-mcp-name="${settingsEscapeAttr(name)}"${hasTools ? ` onclick="scrollToExternalMCPTools(${settingsEscapeJsStringAttr(name)}, event)" title="${settingsEscapeAttr(cardClickTitle)}"` : ''}>
                 <div class="external-mcp-item-header">
                     <div class="external-mcp-item-info">
-                        <h4>${transportIcon} ${escapeHtml(name)}${server.tool_count !== undefined && server.tool_count > 0 ? `<span class="tool-count-badge" title="${escapeHtml(statusT('mcp.toolCount'))}">🔧 ${server.tool_count}</span>` : ''}</h4>
+ <h4>${transportIcon} ${escapeHtml(name)}${server.tool_count !== undefined && server.tool_count > 0 ? `<span class="tool-count-badge" title="${escapeHtml(statusT('mcp.toolCount'))}"> ${server.tool_count}</span>` : ''}</h4>
                         <span class="external-mcp-status ${statusClass}">${statusText}</span>
                     </div>
                     <div class="external-mcp-item-actions">
                         ${status === 'connected' || status === 'disconnected' || status === 'error' || status === 'disabled' ?
                             `<button class="btn-small" id="btn-toggle-${settingsEscapeAttr(name)}" onclick="toggleExternalMCP(${settingsEscapeJsStringAttr(name)}, ${settingsEscapeJsStringAttr(status)})" title="${settingsEscapeAttr(status === 'connected' ? statusT('mcp.stopConnection') : statusT('mcp.startConnection'))}">
-                                ${status === 'connected' ? '⏸ ' + statusT('mcp.stop') : '▶ ' + statusT('mcp.start')}
+ ${status === 'connected' ? ' ' + statusT('mcp.stop') : ' ' + statusT('mcp.start')}
                             </button>` :
                             status === 'connecting' ?
                             `<button class="btn-small" id="btn-toggle-${settingsEscapeAttr(name)}" disabled style="opacity: 0.6; cursor: not-allowed;">
-                                ⏳ ${statusT('mcp.connecting')}
+ ${statusT('mcp.connecting')}
                             </button>` : ''}
-                        <button class="btn-small" onclick="editExternalMCP(${settingsEscapeJsStringAttr(name)})" title="${settingsEscapeAttr(statusT('mcp.editConfig'))}" ${status === 'connecting' ? 'disabled' : ''}>✏️ ${statusT('common.edit')}</button>
-                        <button class="btn-small btn-danger" onclick="deleteExternalMCP(${settingsEscapeJsStringAttr(name)})" title="${settingsEscapeAttr(statusT('mcp.deleteConfig'))}" ${status === 'connecting' ? 'disabled' : ''}>🗑 ${statusT('common.delete')}</button>
+ <button class="btn-small" onclick="editExternalMCP(${settingsEscapeJsStringAttr(name)})" title="${settingsEscapeAttr(statusT('mcp.editConfig'))}" ${status === 'connecting' ? 'disabled' : ''}> ${statusT('common.edit')}</button>
+ <button class="btn-small btn-danger" onclick="deleteExternalMCP(${settingsEscapeJsStringAttr(name)})" title="${settingsEscapeAttr(statusT('mcp.deleteConfig'))}" ${status === 'connecting' ? 'disabled' : ''}> ${statusT('common.delete')}</button>
                     </div>
                 </div>
                 ${(status === 'error' || status === 'disconnected') && server.error ? `
                 <div class="external-mcp-error" style="margin: 12px 0; padding: 12px; background: ${status === 'error' ? '#fee' : '#fff8e6'}; border-left: 3px solid ${status === 'error' ? '#f44' : '#e6a700'}; border-radius: 4px; color: ${status === 'error' ? '#c33' : '#8a6d00'}; font-size: 0.875rem;">
-                    <strong>${status === 'error' ? '❌' : '⚠️'} ${statusT('mcp.connectionErrorLabel')}</strong>${escapeHtml(server.error)}
+ <strong>${status === 'error' ? '' : ''} ${statusT('mcp.connectionErrorLabel')}</strong>${escapeHtml(server.error)}
                 </div>` : ''}
                 <div class="external-mcp-item-details">
                     <div>
@@ -4455,10 +4455,10 @@ function renderExternalMCPStats(stats) {
     
     const statsT = typeof window.t === 'function' ? window.t : (k) => k;
     statsEl.innerHTML = `
-        <span title="${statsT('mcp.totalCount')}">📊 ${statsT('mcp.totalCount')}: <strong>${total}</strong></span>
-        <span title="${statsT('mcp.enabledCount')}">✅ ${statsT('mcp.enabledCount')}: <strong>${enabled}</strong></span>
-        <span title="${statsT('mcp.disabledCount')}">⏸ ${statsT('mcp.disabledCount')}: <strong>${disabled}</strong></span>
-        <span title="${statsT('mcp.connectedCount')}">🔗 ${statsT('mcp.connectedCount')}: <strong>${connected}</strong></span>
+ <span title="${statsT('mcp.totalCount')}"> ${statsT('mcp.totalCount')}: <strong>${total}</strong></span>
+ <span title="${statsT('mcp.enabledCount')}"> ${statsT('mcp.enabledCount')}: <strong>${enabled}</strong></span>
+ <span title="${statsT('mcp.disabledCount')}"> ${statsT('mcp.disabledCount')}: <strong>${disabled}</strong></span>
+ <span title="${statsT('mcp.connectedCount')}"> ${statsT('mcp.connectedCount')}: <strong>${connected}</strong></span>
     `;
 }
 
@@ -4767,7 +4767,7 @@ async function toggleExternalMCP(name, currentStatus) {
         button.disabled = true;
         button.style.opacity = '0.6';
         button.style.cursor = 'not-allowed';
-        button.innerHTML = '⏳ 连接中...';
+ button.innerHTML = '连接中...';
     }
     
     try {
@@ -4826,7 +4826,7 @@ async function toggleExternalMCP(name, currentStatus) {
             button.disabled = false;
             button.style.opacity = '1';
             button.style.cursor = 'pointer';
-            button.innerHTML = '▶ 启动';
+ button.innerHTML = '启动';
         }
         
         // 刷新状态

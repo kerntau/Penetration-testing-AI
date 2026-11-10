@@ -8,7 +8,7 @@
 //   - 自动轮询：startDashboardAutoRefresh() 每 60 秒拉一次；页面切走 / tab 隐藏时自动暂停，
 //     再切回时立即补一次刷新（基于 lastUpdatedAt 避免无效请求）；
 //   - 过期检测：updateLastUpdatedNow 记录时间戳；checkDashboardStale 每 30 秒检查，
-//     超过 5 分钟未刷新则在「上次更新」徽章上加 .is-stale 类（变灰 + 显示 ⚠️）。
+// 超过 5 分钟未刷新则在「上次更新」徽章上加 .is-stale 类（变灰 + 显示 ）。
 
 var DASHBOARD_POLL_INTERVAL_MS = 60 * 1000;
 var DASHBOARD_STALE_THRESHOLD_MS = 5 * 60 * 1000;
@@ -650,7 +650,7 @@ function updateLastUpdatedNow() {
 }
 
 // 数据过期检查：超过 DASHBOARD_STALE_THRESHOLD_MS 未刷新，给徽章加 .is-stale 类，
-// 显示 ⚠️ 图标提示用户「这块数据可能已经过期，请手动刷新或检查网络」
+// 显示 图标提示用户「这块数据可能已经过期，请手动刷新或检查网络」
 function checkDashboardStale() {
     if (!dashboardState.lastUpdatedAt) return;
     var ageMs = Date.now() - dashboardState.lastUpdatedAt;

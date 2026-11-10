@@ -1788,7 +1788,7 @@ function renderMentionSuggestions({ showLoading = false } = {}) {
         return `
             <button type="button" class="mention-item ${activeClass} ${disabledClass}" data-index="${index}">
                 <div class="mention-item-name">
-                    <span class="mention-item-icon">🔧</span>
+ <span class="mention-item-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0 5 5l-9.4 9.4a2.1 2.1 0 0 1-3-3l9.4-9.4z"/><path d="M14.7 6.3 17 4"/></svg></span>
                     <span class="mention-item-text">@${nameHtml}</span>
                     ${badge}
                 </div>
@@ -2814,7 +2814,7 @@ function renderProcessDetails(messageId, processDetails, options) {
         const d = data && typeof data === 'object' ? data : {};
         const base = typeof window.t === 'function'
             ? window.t('chat.einoRunRetryTitle')
-            : '🔁 临时错误重试';
+ : '临时错误重试';
         const attempt = Number(d.attempt || 0);
         const maxAttempts = Number(d.maxAttempts || 0);
         if (Number.isFinite(attempt) && attempt > 0 && Number.isFinite(maxAttempts) && maxAttempts > 0) {
@@ -2870,41 +2870,40 @@ function renderProcessDetails(messageId, processDetails, options) {
         let itemTitle = title;
         if (eventType === 'workflow_start') {
             const name = data.workflowName || data.workflowId || '';
-            itemTitle = '🧭 工作流开始' + (name ? (' · ' + name) : '');
+ itemTitle = '工作流开始' + (name ? (' · ' + name) : '');
         } else if (eventType === 'workflow_done') {
             const name = data.workflowName || data.workflowId || '';
-            itemTitle = '✅ 工作流完成' + (name ? (' · ' + name) : '');
+ itemTitle = '工作流完成' + (name ? (' · ' + name) : '');
         } else if (eventType === 'workflow_node_start') {
             const label = data.label || title || data.nodeId || '';
-            itemTitle = '▶ 节点开始' + (label ? (' · ' + label) : '');
+ itemTitle = '节点开始' + (label ? (' · ' + label) : '');
         } else if (eventType === 'workflow_node_result') {
             const label = data.label || data.nodeId || '';
             const status = data.status || '';
             const nodeType = data.nodeType != null ? String(data.nodeType).toLowerCase() : '';
             if (nodeType === 'condition') {
                 const matched = data.matched === true || data.matched === 'true' || (data.output && (data.output.matched === true || data.output.matched === 'true'));
-                itemTitle = (matched ? '✅' : '🔀') + ' 条件判断' + (label ? (' · ' + label) : '') + ' → ' + (matched ? '是' : '否');
+ itemTitle = '条件判断' + (label ? (' · ' + label) : '') + ' → ' + (matched ? '是' : '否');
             } else {
-                const icon = status === 'failed' ? '❌' : (status === 'skipped' ? '⏭️' : '✅');
-                itemTitle = icon + ' 节点完成' + (label ? (' · ' + label) : '') + (status ? ('（' + status + '）') : '');
+ itemTitle = '节点完成' + (label ? (' · ' + label) : '') + (status ? ('（' + status + '）') : '');
             }
         } else if (eventType === 'workflow_branch_taken' || eventType === 'workflow_branch_skipped') {
             const branch = data.branchLabel || '';
             const target = data.targetLabel || data.targetId || '';
             const taken = eventType === 'workflow_branch_taken';
-            itemTitle = (taken ? '➡️' : '⏭️') + (taken ? ' 执行分支' : ' 跳过分支') + (branch ? (' · ' + branch) : '') + (target ? (' → ' + target) : '');
+ itemTitle = (taken ? '' : '') + (taken ? '执行分支' : '跳过分支') + (branch ? (' · ' + branch) : '') + (target ? (' → ' + target) : '');
         } else if (eventType === 'workflow_tool_start') {
             const tool = data.tool || data.toolName || '';
-            itemTitle = '🔧 工具节点' + (tool ? (' · ' + tool) : '');
+ itemTitle = '工具节点' + (tool ? (' · ' + tool) : '');
         } else if (eventType === 'workflow_agent_output') {
             const label = data.label || data.nodeId || '';
-            itemTitle = '🤖 Agent 输出' + (label ? (' · ' + label) : '');
+ itemTitle = ' Agent 输出' + (label ? (' · ' + label) : '');
         } else if (eventType === 'workflow_hitl_checkpoint') {
-            itemTitle = '🧑‍⚖️ 人工确认检查点';
+ itemTitle = '人工确认检查点';
         } else if (eventType === 'workflow_hitl_waiting') {
-            itemTitle = '🧑‍⚖️ 工作流等待审批';
+ itemTitle = '工作流等待审批';
         } else if (eventType === 'workflow_paused') {
-            itemTitle = '⏸️ 工作流已暂停';
+ itemTitle = '工作流已暂停';
         } else if (eventType === 'iteration') {
             const n = data.iteration || 1;
             if (data.orchestration === 'plan_execute' && data.einoScope === 'main') {
@@ -2926,17 +2925,17 @@ function renderProcessDetails(messageId, processDetails, options) {
                 itemTitle = agPx + (typeof window.t === 'function' ? window.t('chat.iterationRound', { n: n }) : '第 ' + n + ' 轮迭代');
             }
         } else if (eventType === 'thinking') {
-            itemTitle = agPx + '🤔 ' + (typeof window.t === 'function' ? window.t('chat.aiThinking') : 'AI思考');
+ itemTitle = agPx + ' ' + (typeof window.t === 'function' ? window.t('chat.aiThinking') : 'AI思考');
         } else if (eventType === 'reasoning_chain') {
-            itemTitle = agPx + '🔗 ' + (typeof window.t === 'function' ? window.t('chat.reasoningChain') : '推理过程');
+ itemTitle = agPx + ' ' + (typeof window.t === 'function' ? window.t('chat.reasoningChain') : '推理过程');
         } else if (eventType === 'planning') {
             if (typeof window.einoMainStreamPlanningTitle === 'function') {
                 itemTitle = window.einoMainStreamPlanningTitle(data);
             } else {
-                itemTitle = agPx + '📝 ' + (typeof window.t === 'function' ? window.t('chat.planning') : '规划中');
+ itemTitle = agPx + ' ' + (typeof window.t === 'function' ? window.t('chat.planning') : '规划中');
             }
         } else if (eventType === 'tool_calls_detected') {
-            itemTitle = agPx + '🔧 ' + (typeof window.t === 'function' ? window.t('chat.toolCallsDetected', { count: data.count || 0 }) : '检测到 ' + (data.count || 0) + ' 个工具调用');
+ itemTitle = agPx + ' ' + (typeof window.t === 'function' ? window.t('chat.toolCallsDetected', { count: data.count || 0 }) : '检测到 ' + (data.count || 0) + '个工具调用');
         } else if (eventType === 'tool_call') {
             const toolName = data.toolName || (typeof window.t === 'function' ? window.t('chat.unknownTool') : '未知工具');
             const index = data.index || 0;
@@ -2944,7 +2943,7 @@ function renderProcessDetails(messageId, processDetails, options) {
             const callTitle = typeof window.formatToolCallTimelineTitle === 'function'
                 ? window.formatToolCallTimelineTitle(toolName, index, total)
                 : (typeof window.t === 'function' ? window.t('chat.callTool', { name: escapeHtml(toolName), index: index, total: total }) : '调用工具: ' + escapeHtml(toolName) + ' (' + index + '/' + total + ')');
-            itemTitle = agPx + '🔧 ' + callTitle;
+ itemTitle = agPx + ' ' + callTitle;
         } else if (eventType === 'tool_result') {
             const toolName = data.toolName || (typeof window.t === 'function' ? window.t('chat.unknownTool') : '未知工具');
             const noResultText = typeof window.t === 'function' ? window.t('timeline.noResult') : '无结果';
@@ -2955,35 +2954,35 @@ function renderProcessDetails(messageId, processDetails, options) {
                 : { kind: (data.success !== false ? 'success' : 'error'), isError: data.success === false };
             const backgroundRunning = displayState.kind === 'background_running';
             const success = !displayState.isError && !backgroundRunning;
-            const statusIcon = displayState.kind === 'blocked' ? '🛡' : (backgroundRunning ? '⏳' : (success ? '✅' : '❌'));
+ const statusText = displayState.kind === 'blocked' ? '已拦截' : (backgroundRunning ? '运行中' : (success ? '已完成' : '失败'));
             const execText = displayState.kind === 'blocked'
                 ? (typeof window.t === 'function' ? window.t('chat.toolExecBlocked', { name: escapeHtml(toolName) }) : '工具 ' + escapeHtml(toolName) + ' 已拦截')
                 : backgroundRunning
                 ? ((typeof window.getBackgroundRunningToolLabel === 'function' ? window.getBackgroundRunningToolLabel() : '后台执行中') + ': ' + escapeHtml(toolName))
                 : (success ? (typeof window.t === 'function' ? window.t('chat.toolExecComplete', { name: escapeHtml(toolName) }) : '工具 ' + escapeHtml(toolName) + ' 执行完成') : (typeof window.t === 'function' ? window.t('chat.toolExecFailed', { name: escapeHtml(toolName) }) : '工具 ' + escapeHtml(toolName) + ' 执行失败'));
-            let execLine = statusIcon + ' ' + execText;
+            let execLine = statusText + ' · ' + execText;
             if (toolName === BuiltinTools.SEARCH_KNOWLEDGE_BASE && success) {
-                execLine = '📚 ' + execLine + ' - ' + (typeof window.t === 'function' ? window.t('chat.knowledgeRetrievalTag') : '知识检索');
+ execLine = ' ' + execLine + ' - ' + (typeof window.t === 'function' ? window.t('chat.knowledgeRetrievalTag') : '知识检索');
             }
             itemTitle = agPx + execLine;
         } else if (eventType === 'eino_agent_reply') {
-            itemTitle = agPx + '💬 ' + (typeof window.t === 'function' ? window.t('chat.einoAgentReplyTitle') : '子代理回复');
+ itemTitle = agPx + ' ' + (typeof window.t === 'function' ? window.t('chat.einoAgentReplyTitle') : '子代理回复');
         } else if (eventType === 'eino_empty_response_continue') {
             itemTitle = typeof window.t === 'function'
                 ? window.t('chat.einoEmptyResponseContinueTitle')
-                : '🔁 自动续跑（无助手正文）';
+ : '自动续跑（无助手正文）';
         } else if (eventType === 'eino_run_retry') {
             itemTitle = formatProcessDetailEinoRunRetryTitle(data);
             detail.message = formatProcessDetailEinoRunRetryMessage(title, data);
         } else if (eventType === 'knowledge_retrieval') {
-            itemTitle = '📚 ' + (typeof window.t === 'function' ? window.t('chat.knowledgeRetrieval') : '知识检索');
+ itemTitle = ' ' + (typeof window.t === 'function' ? window.t('chat.knowledgeRetrieval') : '知识检索');
         } else if (eventType === 'error') {
-            itemTitle = '❌ ' + (typeof window.t === 'function' ? window.t('chat.error') : '错误');
+ itemTitle = ' ' + (typeof window.t === 'function' ? window.t('chat.error') : '错误');
         } else if (eventType === 'cancelled') {
-            itemTitle = '⛔ ' + (typeof window.t === 'function' ? window.t('chat.taskCancelled') : '任务已取消');
+ itemTitle = ' ' + (typeof window.t === 'function' ? window.t('chat.taskCancelled') : '任务已取消');
         } else if (eventType === 'hitl_interrupt') {
             const hitlMsg = (detail.message && String(detail.message).trim()) ? String(detail.message).trim() : (typeof window.t === 'function' ? window.t('hitl.pendingTitle') : '待审批');
-            itemTitle = agPx + '🧑‍⚖️ HITL · ' + hitlMsg;
+ itemTitle = agPx + ' HITL · ' + hitlMsg;
         } else if (eventType === 'hitl_audit_agent_started') {
             itemTitle = agPx + '审计 Agent 正在审查';
         } else if (eventType === 'hitl_audit_agent') {
@@ -2997,7 +2996,7 @@ function renderProcessDetails(messageId, processDetails, options) {
         } else if (eventType === 'user_interrupt_continue') {
             itemTitle = typeof window.t === 'function'
                 ? window.t('chat.userInterruptContinueTitle')
-                : '⏸️ 用户中断并继续';
+ : '用户中断并继续';
         }
 
         if (eventType === 'hitl_interrupt' || eventType === 'hitl_audit_agent_started' ||
@@ -5849,7 +5848,7 @@ function createConversationListItemWithMenu(conversation, isPinned) {
     if (isPinned) {
         const pinIcon = document.createElement('span');
         pinIcon.className = 'conversation-item-pinned';
-        pinIcon.innerHTML = '📌';
+ pinIcon.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6l-1 7 3 3H4l3-3-1-7z"/><path d="M12 14v7"/></svg>';
         pinIcon.title = '已置顶';
         titleWrapper.appendChild(pinIcon);
     }

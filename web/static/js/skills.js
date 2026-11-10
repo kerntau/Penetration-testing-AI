@@ -528,13 +528,13 @@ function renderSkillPackageTree() {
         if (f.is_dir) {
             const dirLabel = path.endsWith('/') ? path : path + '/';
             return `<div class="skill-tree-row skill-tree-dir" style="padding-left:${indent}px" title="${escapeHtml(_t('skillModal.folderHint'))}">` +
-                `<span class="skill-tree-icon" aria-hidden="true">📁</span>` +
+ `<span class="skill-tree-icon" aria-hidden="true"></span>` +
                 `<span class="skill-tree-label">${escapeHtml(dirLabel)}</span>` +
                 `</div>`;
         }
         const selected = path === skillActivePath ? ' is-selected' : '';
         return `<div class="skill-tree-row skill-tree-file${selected}" style="padding-left:${indent}px" data-skill-tree-path="${escapeAttr(path)}" title="${escapeAttr(_t('skillModal.clickToEdit'))}">` +
-            `<span class="skill-tree-icon" aria-hidden="true">📄</span>` +
+ `<span class="skill-tree-icon" aria-hidden="true"></span>` +
             `<span class="skill-tree-label">${escapeHtml(path)}</span>` +
             `</div>`;
     }).join('');
