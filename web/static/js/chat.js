@@ -3627,9 +3627,7 @@ function formatAssistantTurnTokenUsageTitle(usage) {
         calls: formatAssistantTurnTokenCount(safeUsage.modelCalls),
         model: safeUsage.model || ''
     };
-    return typeof window.t === 'function'
-        ? window.t('chat.turnTokenUsageTitle', values)
-        : 'Token usage: ' + values.total + ' (input ' + values.prompt + ', output ' + values.completion + ')';
+    return 'Token 用量：' + values.total + '（输入 ' + values.prompt + '，输出 ' + values.completion + '）';
 }
 
 function assistantTurnTimestamp(value) {
@@ -4160,7 +4158,7 @@ function copyActiveMCPResultDetail(triggerBtn = null) {
 
 function renderMCPDetailModal(exec) {
     exec = exec || {};
-    document.getElementById('detail-tool-name').textContent = exec.toolName || (typeof window.t === 'function' ? window.t('mcpDetailModal.unknown') : 'Unknown');
+    document.getElementById('detail-tool-name').textContent = exec.toolName || (typeof window.t === 'function' ? window.t('mcpDetailModal.unknown') : '未知');
     document.getElementById('detail-execution-id').textContent = exec.id || 'N/A';
     const statusEl = document.getElementById('detail-status');
     const normalizedStatus = typeof window.getToolExecutionDisplayStatus === 'function' ? window.getToolExecutionDisplayStatus(exec) : (exec.status || 'unknown').toLowerCase();
@@ -5142,7 +5140,7 @@ function attachDeleteTurnButton(messageEl) {
 async function deleteConversationTurnFromUI(anchorBackendMessageId) {
     if (!currentConversationId || !anchorBackendMessageId) return;
     const confirmMsg = typeof window.t === 'function' ? window.t('chat.deleteTurnConfirm') : '确定删除本轮对话？';
-    if (!confirm(confirmMsg)) return;
+    if (!(await confirmAction(confirmMsg))) return;
     try {
         const response = await apiFetch(`/api/conversations/${currentConversationId}/delete-turn`, {
             method: 'POST',
@@ -5172,7 +5170,7 @@ async function deleteConversationTurnFromUI(anchorBackendMessageId) {
 async function deleteConversation(conversationId, skipConfirm = false) {
     // 确认删除（如果调用者没有跳过确认）
     if (!skipConfirm) {
-        if (!confirm('确定要删除这个对话吗？对话消息将不可恢复，但已记录的漏洞会保留在漏洞库中。')) {
+        if (!(await confirmAction('确定要删除这个对话吗？对话消息将不可恢复，但已记录的漏洞会保留在漏洞库中。'))) {
             return;
         }
     }
@@ -5549,9 +5547,9 @@ function renderConversationsPagination(visibleCount) {
     const pageText = tFn
         ? tFn('chat.paginationPage', { page, total: totalPages })
         : `${page}/${totalPages}`;
-    const perPageLabel = tFn ? tFn('chat.paginationPerPage') : 'Per page';
-    const prevLabel = tFn ? tFn('chat.paginationPrev') : 'Prev';
-    const nextLabel = tFn ? tFn('chat.paginationNext') : 'Next';
+    const perPageLabel = tFn ? tFn('chat.paginationPerPage') : '每页';
+    const prevLabel = tFn ? tFn('chat.paginationPrev') : '上一页';
+    const nextLabel = tFn ? tFn('chat.paginationNext') : '下一页';
     const prevPage = page - 1;
     const nextPage = page + 1;
     conversationsPaginationRenderLock = true;
@@ -6250,7 +6248,7 @@ function getConversationRoleLabel(role) {
 
 function formatConversationAsMarkdown(conversation, options = {}) {
     const includeToolDetails = !!options.includeToolDetails;
-    const title = (conversation && conversation.title ? String(conversation.title) : '').trim() || 'Untitled Conversation';
+    const title = (conversation && conversation.title ? String(conversation.title) : '').trim() || '未命名对话';
     const createdAt = formatConversationDateForMarkdown(conversation && conversation.createdAt);
     const updatedAt = formatConversationDateForMarkdown(conversation && conversation.updatedAt);
     const messages = Array.isArray(conversation && conversation.messages) ? conversation.messages : [];
@@ -6375,13 +6373,13 @@ function navigateToVulnerabilitiesForContextConversation() {
 }
 
 // 从上下文菜单删除对话
-function deleteConversationFromContext() {
+async function deleteConversationFromContext() {
     if (typeof requirePermission === 'function' && !requirePermission('chat:delete')) return;
     const convId = contextMenuConversationId;
     if (!convId) return;
 
     const confirmMsg = typeof window.t === 'function' ? window.t('chat.deleteConversationConfirm') : '确定要删除此对话吗？';
-    if (confirm(confirmMsg)) {
+    if ((await confirmAction(confirmMsg))) {
         deleteConversation(convId, true); // 跳过内部确认，因为这里已经确认过了
     }
     closeContextMenu();
@@ -6640,7 +6638,7 @@ async function deleteSelectedConversations() {
     }
 
     const confirmMsg = typeof window.t === 'function' ? window.t('batchManageModal.confirmDeleteN', { count: checkboxes.length }) : '确定要删除选中的 ' + checkboxes.length + ' 条对话吗？';
-    if (!confirm(confirmMsg)) {
+    if (!(await confirmAction(confirmMsg))) {
         return;
     }
 

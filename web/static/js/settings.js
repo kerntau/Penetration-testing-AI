@@ -683,35 +683,28 @@ function syncC2NavFromConfig(cfg) {
 
 // 切换设置分类
 function switchSettingsSection(section) {
-    // Unknown hash sections must not hide every settings panel.
-    const requestedContent = document.getElementById(`settings-section-${section}`);
-    if (!requestedContent) return;
+    const target = document.getElementById(`settings-section-${section}`);
+    if (!target) return;
     if (window.location.hash.split('?')[0] === '#settings') {
         history.replaceState(null, '', section === 'token-usage' ? '#settings?section=token-usage' : '#settings');
     }
 
-    // 更新导航项状态
-    document.querySelectorAll('.settings-nav-item').forEach(item => {
-        item.classList.remove('active');
-    });
-    const activeNavItem = document.querySelector(`.settings-nav-item[data-section="${section}"]`);
-    if (activeNavItem) {
-        activeNavItem.classList.add('active');
-    }
-    
-    // 更新内容区域显示
+    // 两个分区是互斥的两个页面：只显示当前页
     document.querySelectorAll('.settings-section-content').forEach(content => {
         content.classList.remove('active');
     });
-    const activeContent = document.getElementById(`settings-section-${section}`);
-    if (activeContent) {
-        activeContent.classList.add('active');
-        initSettingsCustomSelects(activeContent);
+    target.classList.add('active');
+    initSettingsCustomSelects(target);
+
+    // 页面标题跟随当前分区，视觉上就是两张不同的页面
+    const titleEl = document.querySelector('#page-settings .page-header h2');
+    if (titleEl) {
+        titleEl.textContent = section === 'token-usage' ? '用量与运维' : '基本设置';
     }
+
+    if (typeof updateNavState === 'function') updateNavState('settings');
     if (section === 'token-usage' && typeof refreshTokenUsage === 'function') {
         refreshTokenUsage();
-    } else if (typeof stopTokenUsageRequests === 'function') {
-        stopTokenUsageRequests();
     }
 }
 
@@ -734,8 +727,11 @@ async function openSettings() {
         input.classList.remove('error');
     });
     
-    // 默认显示基本设置
-    switchSettingsSection('basic');
+    // 侧边栏两个导航项对应两个分区页：只渲染用户点开的那一个
+    const pendingSection = window.__pendingSettingsSection
+        || (String(window.location.hash || '').includes('section=token-usage') ? 'token-usage' : 'basic');
+    window.__pendingSettingsSection = null;
+    switchSettingsSection(pendingSection);
 }
 
 // 关闭设置（保留函数以兼容旧代码，但现在不需要关闭功能）
@@ -2408,7 +2404,7 @@ function syncModelPickDropdown(selectId) {
     const reg = modelPickSelectMap[selectId];
     if (!reg) return;
     const { select, dropdown, trigger, wrapper, menuList, countBadge } = reg;
-    const placeholder = modelPickT('settingsBasic.modelsListSelectPlaceholder');
+    const placeholder = "请选择模型";
 
     menuList.innerHTML = '';
     let optionCount = 0;
@@ -2480,7 +2476,7 @@ function enhanceModelPickSelect(selectId) {
 
     const labelSpan = document.createElement('span');
     labelSpan.className = 'model-pick-trigger-label';
-    labelSpan.textContent = modelPickT('settingsBasic.modelsListSelectPlaceholder');
+    labelSpan.textContent = "请选择模型";
 
     const meta = document.createElement('span');
     meta.className = 'model-pick-trigger-meta';
@@ -3151,7 +3147,7 @@ function createAIChannelFromForm() {
     if (selectedAIChannelId && currentConfig.ai.channels[selectedAIChannelId]) {
         currentConfig.ai.channels[selectedAIChannelId] = readAIChannelFromMainForm(selectedAIChannelId);
     }
-    const baseName = (typeof window.t === 'function' ? window.t('settingsBasic.aiChannelUntitled') : 'New Channel');
+    const baseName = (typeof window.t === 'function' ? window.t('settingsBasic.aiChannelUntitled') : '新通道');
     const id = uniqueAIChannelId(baseName);
     currentConfig.ai.channels[id] = {
         name: baseName,
@@ -3195,7 +3191,7 @@ async function deleteSelectedAIChannel() {
     const msg = typeof window.t === 'function'
         ? window.t('settingsBasic.aiChannelDeleteConfirm').replace('{name}', name)
         : `确定删除 AI 通道「${name}」吗？`;
-    if (!confirm(msg)) {
+    if (!(await confirmAction(msg))) {
         return;
     }
     delete currentConfig.ai.channels[id];
@@ -3301,7 +3297,7 @@ async function deleteCheckedAIChannels() {
         return;
     }
     const names = deletable.map((id) => currentConfig.ai.channels[id]?.name || id).join('、');
-    if (!confirm(`确定删除 ${deletable.length} 个 AI 通道吗？\n${names}`)) {
+    if (!(await confirmAction(`确定删除 ${deletable.length} 个 AI 通道吗？\n${names}`))) {
         return;
     }
     deletable.forEach((id) => {
@@ -4730,7 +4726,7 @@ async function saveExternalMCP() {
 
 // 删除外部MCP
 async function deleteExternalMCP(name) {
-    if (!confirm((typeof window.t === 'function' ? window.t('mcp.deleteExternalConfirm', { name: name }) : `确定要删除外部MCP "${name}" 吗？`))) {
+    if (!(await confirmAction((typeof window.t === 'function' ? window.t('mcp.deleteExternalConfirm', { name: name }) : `确定要删除外部MCP "${name}" 吗？`)))) {
         return;
     }
     

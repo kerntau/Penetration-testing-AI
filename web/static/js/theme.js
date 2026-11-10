@@ -2,24 +2,19 @@
     'use strict';
 
     const STORAGE_KEY = 'ptai-theme';
-    const THEMES = ['system', 'light', 'dark'];
+    const THEMES = ['light', 'dark'];
     const FALLBACK_LABELS = {
-        system: '跟随系统',
         light: '浅色',
         dark: '暗色'
     };
     const FALLBACK_TITLES = {
-        system: '当前：跟随系统主题。点击切换为浅色。',
-        light: '当前：浅色主题。点击切换为暗色。',
-        dark: '当前：暗色主题。点击切换为跟随系统。'
+        light: '当前：浅色主题。',
+        dark: '当前：暗色主题。'
     };
     const TITLE_KEYS = {
-        system: 'titleSystem',
         light: 'titleLight',
         dark: 'titleDark'
     };
-
-    const media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
 
     function themeText(key, fallback) {
         if (typeof window.t === 'function') {
@@ -32,46 +27,42 @@
     }
 
     function getLabel(preference) {
-        return themeText(preference, FALLBACK_LABELS[preference] || FALLBACK_LABELS.system);
+        return themeText(preference, FALLBACK_LABELS[preference] || FALLBACK_LABELS.light);
     }
 
     function getTitle(preference) {
-        const titleKey = TITLE_KEYS[preference] || TITLE_KEYS.system;
-        return themeText(titleKey, FALLBACK_TITLES[preference] || FALLBACK_TITLES.system);
+        const titleKey = TITLE_KEYS[preference] || TITLE_KEYS.light;
+        return themeText(titleKey, FALLBACK_TITLES[preference] || FALLBACK_TITLES.light);
     }
 
     function normalizePreference(value) {
-        return THEMES.includes(value) ? value : 'system';
+        return THEMES.includes(value) ? value : 'light';
     }
 
     function readPreference() {
         try {
             return normalizePreference(localStorage.getItem(STORAGE_KEY));
         } catch (err) {
-            return 'system';
+            return 'light';
         }
     }
 
     function resolveTheme(preference) {
-        if (preference === 'dark' || preference === 'light') {
-            return preference;
-        }
-        return media && media.matches ? 'dark' : 'light';
+        return preference === 'dark' ? 'dark' : 'light';
     }
 
     function updateButton(preference, resolved) {
-        const btn = document.getElementById('theme-toggle-btn');
-        const label = document.getElementById('theme-toggle-label');
-        if (!btn) {
-            return;
-        }
-        btn.dataset.themePreference = preference;
-        btn.dataset.theme = resolved;
-        const title = getTitle(preference);
-        btn.title = title;
-        btn.setAttribute('aria-label', title);
-        if (label) {
-            label.textContent = getLabel(preference);
+        document.querySelectorAll('.theme-switch-btn').forEach(function (btn) {
+            const active = btn.dataset.themeValue === preference;
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        const legacy = document.getElementById('theme-toggle-btn');
+        if (legacy) {
+            legacy.dataset.themePreference = preference;
+            legacy.dataset.theme = resolved;
+            legacy.title = getTitle(preference);
+            legacy.setAttribute('aria-label', getTitle(preference));
         }
     }
 
@@ -110,19 +101,6 @@
     window.refreshThemeToggleLabel = function () {
         applyTheme(readPreference());
     };
-
-    if (media) {
-        const onSystemThemeChange = function () {
-            if (readPreference() === 'system') {
-                applyTheme('system');
-            }
-        };
-        if (typeof media.addEventListener === 'function') {
-            media.addEventListener('change', onSystemThemeChange);
-        } else if (typeof media.addListener === 'function') {
-            media.addListener(onSystemThemeChange);
-        }
-    }
 
     document.addEventListener('languagechange', function () {
         applyTheme(readPreference());

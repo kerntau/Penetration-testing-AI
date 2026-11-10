@@ -362,7 +362,7 @@ html.initial-route-pending .content-area {
 }
 
 .page-header {
-    padding: 12px 20px;
+    padding: 12px 24px;
     background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
     border-bottom: 1px solid var(--border-color);
     display: flex;
@@ -661,7 +661,7 @@ html[data-theme="dark"] .vulnerability-alert-switch input:disabled + .vulnerabil
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 16px 20px;
+    padding: 24px;
     min-height: 0;
 }
 
@@ -8326,7 +8326,7 @@ html[data-theme="dark"] .login-card .login-submit:disabled {
 .settings-content {
     flex: 1;
     overflow-y: auto;
-    padding: 24px 32px;
+    padding: 0;
     background: var(--bg-primary);
 }
 
@@ -47284,4 +47284,253 @@ html[data-theme="dark"] .token-usage-panel { --token-cache-color: #2dd4bf; }
     line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-all;
+}
+
+/* 顶栏主题三档切换（浅色 / 暗色 / 跟随系统） */
+.theme-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 10px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+}
+
+.theme-switch-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.78125rem;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.theme-switch-btn svg {
+    flex: 0 0 auto;
+    stroke: currentColor;
+}
+
+.theme-switch-btn:hover {
+    color: var(--text-primary);
+}
+
+.theme-switch-btn.is-active {
+    background: var(--bg-primary);
+    color: var(--accent-color);
+    box-shadow: var(--shadow-sm);
+}
+
+html[data-theme="dark"] .theme-switch-btn.is-active {
+    background: #1e293b;
+    color: #93b4ff;
+}
+
+@media (max-width: 860px) {
+    .theme-switch-btn span {
+        display: none;
+    }
+
+    .theme-switch-btn {
+        padding: 6px 8px;
+    }
+}
+
+/* 仪表盘：两列等高网格，消除右侧与底部留白 */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    align-items: stretch;
+}
+
+.dashboard-grid .dashboard-main,
+.dashboard-grid .dashboard-side {
+    display: contents;
+}
+
+.dashboard-section-chart {
+    grid-column: 1 / -1;
+}
+
+.dashboard-section-recent-feed {
+    grid-column: 1;
+}
+
+.dashboard-section-tools {
+    grid-column: 2;
+}
+
+.dashboard-section-resources {
+    grid-column: 1 / -1;
+}
+
+.dashboard-resource-list {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.dashboard-resource-item {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+@media (max-width: 980px) {
+    .dashboard-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .dashboard-section-chart,
+    .dashboard-section-recent-feed,
+    .dashboard-section-tools,
+    .dashboard-section-resources {
+        grid-column: 1 / -1;
+    }
+
+    .dashboard-resource-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+html[data-theme="dark"] .dashboard-resource-item {
+    background: rgba(30, 41, 59, 0.6);
+    border-color: #1e293b;
+}
+
+/* 主题切换：两档紧凑按钮 */
+.theme-switch {
+    gap: 0;
+    padding: 2px;
+    border-radius: 8px;
+}
+
+.theme-switch-btn {
+    gap: 4px;
+    padding: 4px 9px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+}
+
+.theme-switch-btn svg {
+    width: 13px;
+    height: 13px;
+}
+
+.settings-section-header h3 {
+    font-size: 1.0625rem;
+    letter-spacing: -0.01em;
+}
+
+.settings-section-header {
+    margin-bottom: 20px;
+}
+
+/* 用量与运维：刷新按钮行（标题已由页面标题栏承担） */
+.token-usage-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+}
+
+/* 移动抽屉的关闭按钮只在抽屉里出现，桌面端必须隐藏（曾被误认为多余控件） */
+@media (min-width: 768px) {
+    .m-chat-drawer-close,
+    .m-close-btn.m-chat-drawer-close {
+        display: none !important;
+    }
+}
+
+/* 用量与运维：工具栏单行排布，刷新按钮靠右 */
+.token-usage-toolbar {
+    flex-wrap: nowrap;
+}
+
+.token-usage-toolbar select {
+    width: auto;
+    min-width: 120px;
+    flex: 0 0 auto;
+}
+
+.token-usage-refresh {
+    margin-left: auto;
+    flex: 0 0 auto;
+}
+/* 用量与运维：与页面标题左对齐，不再居中留白 */
+.token-usage-panel {
+    max-width: none;
+    margin: 0 0 24px;
+}
+
+.token-usage-toolbar .settings-custom-select {
+    width: auto;
+    min-width: 140px;
+    flex: 0 0 auto;
+}
+
+.token-usage-scope {
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.token-usage-toolbar label {
+    flex: 0 0 auto;
+}
+/* 页面内确认弹窗（替代被浏览器拦截的原生 confirm） */
+.app-confirm-dialog {
+    width: calc(100% - 48px);
+    max-width: 420px;
+    padding: 22px 24px;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-lg);
+}
+
+.app-confirm-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.38);
+}
+
+.app-confirm-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+}
+
+.app-confirm-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.app-confirm-message {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+}
+
+.app-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.app-confirm-actions .btn-primary {
+    background: var(--error-color);
+    border-color: var(--error-color);
 }

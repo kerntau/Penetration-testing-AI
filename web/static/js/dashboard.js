@@ -294,15 +294,6 @@ async function refreshDashboard() {
             externalMcpDown: externalMcpDown
         });
 
-        // 智能 CTA：有数据时隐藏「开始你的安全之旅」
-        var toolsConfiguredCount = (toolsConfigRes && typeof toolsConfigRes.total === 'number')
-            ? toolsConfigRes.total : 0;
-        updateSmartCTA({
-            totalRunning: runningConversations,
-            totalVulns: (vulnRes && typeof vulnRes.total === 'number') ? vulnRes.total : 0,
-            totalCalls: toolsTotalCalls,
-            toolsConfigured: toolsConfiguredCount
-        });
 
         // 更新「上次更新」时间
         updateLastUpdatedNow();
@@ -616,18 +607,6 @@ function renderExternalMcpHealth(stats) {
     return down;
 }
 
-function updateSmartCTA(state) {
-    var cta = document.getElementById('dashboard-cta-block');
-    if (!cta) return;
-    var hasData = (
-        (state.totalRunning || 0) > 0 ||
-        (state.totalVulns || 0) > 0 ||
-        (state.totalCalls || 0) > 0 ||
-        (state.toolsConfigured || 0) > 0 ||
-        (state.batchTotal || 0) > 0
-    );
-    cta.hidden = hasData;
-}
 
 // 「上次更新」时间显示；同时记录 lastUpdatedAt 给 stale 检查使用，并清掉 stale 状态
 function updateLastUpdatedNow() {

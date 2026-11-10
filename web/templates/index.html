@@ -37,12 +37,12 @@
             }
         })();
     </script>
-    <link rel="stylesheet" href="/static/css/style.css?v=20261027-pagination-custom-select">
-    <link rel="stylesheet" href="/static/css/vulnerability-download.css?v=20261030-2">
-    <link rel="stylesheet" href="/static/css/tool-guard.css?v=20260907-7">
+    <link rel="stylesheet" href="/static/css/style.css?v=v20261111-ui6">
+    <link rel="stylesheet" href="/static/css/vulnerability-download.css?v=v20261111-ui6">
+    <link rel="stylesheet" href="/static/css/tool-guard.css?v=v20261111-ui6">
     <!-- 移动端样式层：全部规则限定在 767.98px 以下，桌面端零影响 -->
-    <link rel="stylesheet" href="/static/css/mobile.css?v=20261015-project-table-3">
-    <script src="/static/js/router.js?v=20261011-token-settings"></script>
+    <link rel="stylesheet" href="/static/css/mobile.css?v=v20261111-ui6">
+    <script src="/static/js/router.js?v=v20261111-ui6"></script>
 </head>
 <body>
     <div class="container">
@@ -53,25 +53,24 @@
                         <span class="brand-wordmark__core">Penetration-testing</span><span class="brand-wordmark__ai">-AI</span>
                     </h1>
                 </div>
-                <div class="header-right">
-                    <div class="header-actions">
-                        <button id="theme-toggle-btn" class="theme-toggle-btn" type="button" onclick="window.cycleThemePreference && window.cycleThemePreference()" title="切换主题" aria-label="切换主题">
-                            <svg class="theme-toggle-icon theme-toggle-icon--system" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="3" y="4" width="18" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
-                                <path d="M8 21h8M12 17v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                            <svg class="theme-toggle-icon theme-toggle-icon--light" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/>
-                                <path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                            <svg class="theme-toggle-icon theme-toggle-icon--dark" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3a7 7 0 1 0 11.5 11.5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                            </svg>
-                            <span id="theme-toggle-label">跟随系统</span>
-                        </button>
-                        </div>
-                    </div>
+            <div class="header-right">
+                <div class="theme-switch" role="group" aria-label="主题模式">
+                    <button type="button" class="theme-switch-btn" data-theme-value="light" onclick="window.setThemePreference && window.setThemePreference('light')" title="浅色主题">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="4"></circle>
+                            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+                        </svg>
+                        <span>浅色</span>
+                    </button>
+                    <button type="button" class="theme-switch-btn" data-theme-value="dark" onclick="window.setThemePreference && window.setThemePreference('dark')" title="暗色主题">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8z"></path>
+                        </svg>
+                        <span>暗色</span>
+                    </button>
                 </div>
+            </div>
+            </div>
         </header>
 
         <div class="main-layout">
@@ -82,9 +81,8 @@
                         <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </div>
-                <nav class="main-sidebar-nav">
-                    <div class="nav-section-label" role="presentation"><span>工作台</span></div>
-                    <button type="button" class="nav-item active" data-page="dashboard" data-title="仪表盘" onclick="switchPage('dashboard')">
+                                    <div class="nav-section-label" role="presentation"><span>工作台</span></div>
+<button type="button" class="nav-item active" data-page="dashboard" data-title="仪表盘" onclick="switchPage('dashboard')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <rect x="3" y="3" width="7" height="9" rx="1.5"></rect>
                             <rect x="14" y="3" width="7" height="5" rx="1.5"></rect>
@@ -93,61 +91,29 @@
                         </svg>
                         <span>仪表盘</span>
                     </button>
-                    <button type="button" class="nav-item" data-page="chat" data-title="对话" onclick="switchPage('chat')">
+<button type="button" class="nav-item" data-page="chat" data-title="对话" onclick="switchPage('chat')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                         </svg>
                         <span>对话</span>
                     </button>
-
                     <div class="nav-section-label" role="presentation"><span>安全作业</span></div>
-                    <button type="button" class="nav-item" data-page="vulnerabilities" data-title="漏洞管理" onclick="switchPage('vulnerabilities')">
+<button type="button" class="nav-item" data-page="vulnerabilities" data-title="漏洞管理" onclick="switchPage('vulnerabilities')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                             <path d="M9 12l2 2 4-4"></path>
                         </svg>
                         <span>漏洞管理</span>
                     </button>
-                    <button type="button" class="nav-item" data-page="tool-guard" data-title="调用拦截" data-require-permission="config:read" onclick="switchPage('tool-guard')">
+<button type="button" class="nav-item" data-page="tool-guard" data-title="调用拦截" data-require-permission="config:read" onclick="switchPage('tool-guard')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <rect x="4" y="10" width="16" height="11" rx="2"></rect>
                             <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"></path>
                         </svg>
                         <span>调用拦截</span>
                     </button>
-
                     <div class="nav-section-label" role="presentation"><span>能力中心</span></div>
-                    <button type="button" class="nav-item" data-page="mcp-monitor" data-title="MCP 监控" onclick="switchPage('mcp-monitor')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M3 12h4l2.5 7 5-14 2.5 7h4"></path>
-                        </svg>
-                        <span>MCP 监控</span>
-                    </button>
-                    <button type="button" class="nav-item" data-page="mcp-management" data-title="MCP 管理" onclick="switchPage('mcp-management')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path>
-                        </svg>
-                        <span>MCP 管理</span>
-                    </button>
-                    <button type="button" class="nav-item" data-page="skills-monitor" data-title="技能状态" onclick="switchPage('skills-monitor')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M3 3v18h18"></path>
-                            <rect x="7" y="12" width="3" height="6" rx="1"></rect>
-                            <rect x="12" y="8" width="3" height="10" rx="1"></rect>
-                            <rect x="17" y="5" width="3" height="13" rx="1"></rect>
-                        </svg>
-                        <span>技能状态</span>
-                    </button>
-                    <button type="button" class="nav-item" data-page="skills-management" data-title="技能管理" onclick="switchPage('skills-management')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                        </svg>
-                        <span>技能管理</span>
-                    </button>
-                    <button type="button" class="nav-item" data-page="roles-management" data-title="角色管理" onclick="switchPage('roles-management')">
+<button type="button" class="nav-item" data-page="roles-management" data-title="角色管理" onclick="switchPage('roles-management')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                             <circle cx="9" cy="7" r="4"></circle>
@@ -156,14 +122,54 @@
                         </svg>
                         <span>角色管理</span>
                     </button>
-
-                    <div class="nav-section-label" role="presentation"><span>平台</span></div>
-                    <button type="button" class="nav-item" data-page="settings" data-title="系统设置" onclick="switchPage('settings')">
+<button type="button" class="nav-item" data-page="skills-management" data-title="技能管理" onclick="switchPage('skills-management')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
                         </svg>
-                        <span>系统设置</span>
+                        <span>技能管理</span>
+                    </button>
+<button type="button" class="nav-item" data-page="skills-monitor" data-title="技能状态" onclick="switchPage('skills-monitor')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 3v18h18"></path>
+                            <rect x="7" y="12" width="3" height="6" rx="1"></rect>
+                            <rect x="12" y="8" width="3" height="10" rx="1"></rect>
+                            <rect x="17" y="5" width="3" height="13" rx="1"></rect>
+                        </svg>
+                        <span>技能状态</span>
+                    </button>
+<button type="button" class="nav-item" data-page="mcp-management" data-title="MCP 管理" onclick="switchPage('mcp-management')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path>
+                        </svg>
+                        <span>MCP 管理</span>
+                    </button>
+<button type="button" class="nav-item" data-page="mcp-monitor" data-title="MCP 监控" onclick="switchPage('mcp-monitor')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 12h4l2.5 7 5-14 2.5 7h4"></path>
+                        </svg>
+                        <span>MCP 监控</span>
+                    </button>
+                    <div class="nav-section-label" role="presentation"><span>平台</span></div>
+<button type="button" class="nav-item" data-page="settings" data-settings-section="basic" data-title="基本设置" onclick="openSettingsSection('basic')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"></path>
+                            <circle cx="16" cy="6" r="2"></circle>
+                            <circle cx="10" cy="12" r="2"></circle>
+                            <circle cx="18" cy="18" r="2"></circle>
+                        </svg>
+                        <span>基本设置</span>
+                    </button>
+<button type="button" class="nav-item" data-page="settings" data-settings-section="token-usage" data-title="用量与运维" onclick="openSettingsSection('token-usage')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 3v18h18"></path>
+                            <rect x="7" y="12" width="3" height="6" rx="1"></rect>
+                            <rect x="12" y="8" width="3" height="10" rx="1"></rect>
+                            <rect x="17" y="5" width="3" height="13" rx="1"></rect>
+                        </svg>
+                        <span>用量与运维</span>
                     </button>
                 </nav>
             </aside>
@@ -475,7 +481,7 @@
                                                 <span class="dashboard-resource-icon dashboard-resource-icon-external" aria-hidden="true">
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                                                 </span>
-                                                <span class="dashboard-resource-label">External MCP</span>
+                                                <span class="dashboard-resource-label">外部 MCP</span>
                                                 <span class="dashboard-resource-value" id="dashboard-resource-external-mcp">
                                                     <span id="dashboard-resource-external-mcp-text">-</span>
                                                     <span class="dashboard-resource-health" id="dashboard-resource-external-mcp-health" hidden></span>
@@ -485,7 +491,7 @@
                                                 <span class="dashboard-resource-icon dashboard-resource-icon-skills" aria-hidden="true">
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                                                 </span>
-                                                <span class="dashboard-resource-label">Skills</span>
+                                                <span class="dashboard-resource-label">技能</span>
                                                 <span class="dashboard-resource-value" id="dashboard-resource-skills">-</span>
                                             </a>
                                             <a class="dashboard-resource-item" onclick="switchPage('roles-management')" role="button" tabindex="0">
@@ -500,21 +506,6 @@
                                 </div>
                             </div>
                             <!-- "开始你的安全之旅" CTA：默认显示；当用户已经有数据（任务/漏洞/调用）后，由 JS 隐藏避免冗余 -->
-                            <div class="dashboard-cta-block" id="dashboard-cta-block">
-                                <div class="dashboard-cta-content">
-                                    <div class="dashboard-cta-icon" aria-hidden="true">
-                                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                                    </div>
-                                    <div class="dashboard-cta-copy">
-                                        <p class="dashboard-cta-text">开始你的安全之旅</p>
-                                        <p class="dashboard-cta-sub">在对话中描述目标，AI 将协助执行扫描与漏洞分析</p>
-                                    </div>
-                                </div>
-                                <button class="dashboard-cta-btn" onclick="switchPage('chat')">
-                                    <span>前往对话</span>
-                                    <span class="dashboard-cta-btn-arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1167,7 +1158,7 @@
                     <div class="page-content page-content-with-pagination">
                         <div class="skills-overview" id="skills-management-stats">
                             <div class="skills-overview-card skills-overview-card-primary">
-                                <span class="skills-overview-label">Skills</span>
+                                <span class="skills-overview-label">技能</span>
                                 <strong class="skill-stat-value">0</strong>
                             </div>
                             <div class="skills-overview-card">
@@ -1208,54 +1199,10 @@
                     </div>
                     <div class="page-content settings-layout">
                         <!-- 左侧导航栏 -->
-                        <aside class="settings-sidebar">
-                            <nav class="settings-nav">
-                                <div class="settings-nav-item active" data-section="basic" onclick="switchSettingsSection('basic')">
-                                    <span>基本设置</span>
-                                </div>
-                                <div class="settings-nav-item" data-section="token-usage" role="button" tabindex="0" onclick="switchSettingsSection('token-usage')" onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); switchSettingsSection('token-usage'); }">
-                                    <span>用量与运维</span>
-                                </div>
-                            </nav>
-                        </aside>
                         
                         <!-- 右侧内容区域 -->
                         <div class="settings-content">
-                            <div id="settings-section-token-usage" class="settings-section-content token-usage-panel">
-                                <div class="settings-section-header token-usage-header">
-                                    <div><h3>用量与运维</h3><p class="token-usage-subtitle">查看模型消耗与运行日志</p></div>
-                                    <button id="settings-token-refresh" type="button" class="btn-secondary" onclick="refreshTokenUsage()">刷新</button>
-                                </div>
-                                <div class="token-usage-toolbar">
-                                    <label for="settings-token-days">统计周期</label>
-                                    <select id="settings-token-days" onchange="changeTokenUsagePeriod(this.value)">
-                                        <option value="7">近 7 天</option>
-                                        <option value="30">近 30 天</option>
-                                        <option value="90">近 90 天</option>
-                                    </select>
-                                    <span id="settings-token-scope" class="token-usage-scope"></span>
-                                </div>
-                                <details class="token-usage-note"><summary>统计口径与说明</summary><p>统计已记录的 Agent 运行中模型返回的用量，包括子 Agent。缓存读取和写入属于输入，推理属于输出，不重复加入总量。未返回或未采集的用量不在统计内；这不是供应商账单。模型按运行配置归类，切换模型的运行可能混合用量。</p></details>
-                                <div id="settings-token-analysis" aria-live="polite"></div>
-
-                                <!-- 运行日志 -->
-                                <div class="settings-subsection runtime-log-panel">
-                                    <div class="settings-subsection-header">
-                                        <h4>运行日志</h4>
-                                        <div class="runtime-log-actions">
-                                            <select id="runtime-log-file" onchange="refreshRuntimeLogs()"></select>
-                                            <button type="button" class="btn-secondary" onclick="refreshRuntimeLogs()">刷新</button>
-                                        </div>
-                                    </div>
-                                    <pre id="runtime-log-output" class="runtime-log-output">加载中…</pre>
-                                </div>
-                            </div>
-
-                            <!-- 基本设置 -->
                             <div id="settings-section-basic" class="settings-section-content active">
-                                <div class="settings-section-header">
-                                    <h3>基本设置</h3>
-                                </div>
                                 
                                 <!-- AI 通道配置 -->
                                 <div class="settings-subsection">
@@ -1317,11 +1264,11 @@
                                                                 </select>
                                                             </div>
                                                             <div class="form-group span-2">
-                                                                <label for="openai-base-url">Base URL <span class="required-mark">*</span></label>
+                                                                <label for="openai-base-url">接口地址 <span class="required-mark">*</span></label>
                                                                 <input type="text" id="openai-base-url" placeholder="https://api.openai.com/v1" required />
                                                             </div>
                                                             <div class="form-group span-2">
-                                                                <label for="openai-api-key">API Key <span class="required-mark">*</span></label>
+                                                                <label for="openai-api-key">API 密钥 <span class="required-mark">*</span></label>
                                                                 <input type="password" id="openai-api-key" placeholder="输入OpenAI API Key" required />
                                                             </div>
                                                             <div class="form-group span-2">
@@ -1513,6 +1460,34 @@
                                     <button class="btn-primary" onclick="applySettings()" data-require-permission="config:write">应用配置</button>
                                 </div>
                             </div>
+                            <div id="settings-section-token-usage" class="settings-section-content token-usage-panel">
+                                <div class="token-usage-toolbar">
+                                    <label for="settings-token-days">统计周期</label>
+                                    <select id="settings-token-days" onchange="changeTokenUsagePeriod(this.value)">
+                                        <option value="7">近 7 天</option>
+                                        <option value="30">近 30 天</option>
+                                        <option value="90">近 90 天</option>
+                                    </select>
+                                    <span id="settings-token-scope" class="token-usage-scope"></span>
+                                    <button id="settings-token-refresh" type="button" class="btn-secondary token-usage-refresh" onclick="refreshTokenUsage()">刷新</button>
+                                </div>
+                                <details class="token-usage-note"><summary>统计口径与说明</summary><p>统计已记录的 Agent 运行中模型返回的用量，包括子 Agent。缓存读取和写入属于输入，推理属于输出，不重复加入总量。未返回或未采集的用量不在统计内；这不是供应商账单。模型按运行配置归类，切换模型的运行可能混合用量。</p></details>
+                                <div id="settings-token-analysis" aria-live="polite"></div>
+
+                                <!-- 运行日志 -->
+                                <div class="settings-subsection runtime-log-panel">
+                                    <div class="settings-subsection-header">
+                                        <h4>运行日志</h4>
+                                        <div class="runtime-log-actions">
+                                            <select id="runtime-log-file" onchange="refreshRuntimeLogs()"></select>
+                                            <button type="button" class="btn-secondary" onclick="refreshRuntimeLogs()">刷新</button>
+                                        </div>
+                                    </div>
+                                    <pre id="runtime-log-output" class="runtime-log-output">加载中…</pre>
+                                </div>
+                            </div>
+
+                            <!-- 基本设置 -->
 
                         </div>
                     </div>
@@ -2060,7 +2035,8 @@
     </div>
     <script src="/static/js/theme.js"></script>
     <script src="/static/js/builtin-tools.js"></script>
-    <script src="/static/js/auth.js?v=20261008-password-eye-1"></script>
+    <script src="/static/js/confirm-dialog.js?v=v20261111-ui6"></script>
+    <script src="/static/js/auth.js?v=v20261111-ui6"></script>
     <script src="/static/js/modal.js"></script>
     <dialog id="vulnerability-download-dialog" aria-labelledby="vulnerability-download-heading" aria-describedby="vulnerability-download-hint">
         <div class="vulnerability-download-content">
@@ -2075,18 +2051,18 @@
         </div>
     </dialog>
 
-    <script src="/static/js/dashboard.js?v=20261011-token-settings-cache-only"></script>
-    <script src="/static/js/chat-scroll.js?v=20260815-1"></script>
-    <script src="/static/js/monitor.js?v=20261011-token-usage-pagination-20261027"></script>
-    <script src="/static/js/chat.js?v=20261110-lean-session-settings-removed"></script>
-    <script src="/static/js/tool-guard.js?v=20261010-conflict"></script>
-    <script src="/static/js/token-usage.js?v=20261012-token-analytics"></script>
-    <script src="/static/js/settings.js?v=20261011-token-settings-pagination-20261027"></script>
-    <script src="/static/js/skills.js?v=20261027-pagination-custom-select"></script>
-    <script src="/static/js/vulnerability.js?v=20261030-format-download"></script>
-    <script src="/static/js/vulnerability-download.js?v=20261030-2"></script>
-    <script src="/static/js/roles.js?v=20261110-lean-session-settings-removed"></script>
+    <script src="/static/js/dashboard.js?v=v20261111-ui6"></script>
+    <script src="/static/js/chat-scroll.js?v=v20261111-ui6"></script>
+    <script src="/static/js/monitor.js?v=v20261111-ui6"></script>
+    <script src="/static/js/chat.js?v=v20261111-ui6"></script>
+    <script src="/static/js/tool-guard.js?v=v20261111-ui6"></script>
+    <script src="/static/js/token-usage.js?v=v20261111-ui6"></script>
+    <script src="/static/js/settings.js?v=v20261111-ui6"></script>
+    <script src="/static/js/skills.js?v=v20261111-ui6"></script>
+    <script src="/static/js/vulnerability.js?v=v20261111-ui6"></script>
+    <script src="/static/js/vulnerability-download.js?v=v20261111-ui6"></script>
+    <script src="/static/js/roles.js?v=v20261111-ui6"></script>
     <!-- 移动端交互层：必须最后加载，它包装 window.switchPage 并注入移动端 DOM -->
-    <script src="/static/js/mobile-ui.js?v=20261006-9"></script>
+    <script src="/static/js/mobile-ui.js?v=v20261111-ui6"></script>
 </body>
 </html>

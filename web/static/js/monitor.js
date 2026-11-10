@@ -5612,9 +5612,9 @@ function buildToolResultSectionHtml(data, opts) {
     const _t = function (k, o) {
         return typeof window.t === 'function' ? window.t(k, o) : k;
     };
-    const execResultLabel = _t('timeline.executionResult');
-    const execIdLabel = _t('timeline.executionId');
-    const waitingLabel = opts.pendingText || _t('timeline.running');
+    const execResultLabel = '执行结果:';
+    const execIdLabel = '执行ID:';
+    const waitingLabel = opts.pendingText || '执行中...';
     if (opts.pending) {
         return (
             '<div class="tool-result-section pending">' +
@@ -5623,7 +5623,7 @@ function buildToolResultSectionHtml(data, opts) {
             '</div>'
         );
     }
-    const noResultText = _t('timeline.noResult');
+    const noResultText = '无结果';
     const result = data.result != null ? data.result : (data.error != null ? data.error : (data.resultPreview != null ? data.resultPreview : noResultText));
     const resultStr = typeof result === 'string' ? result : JSON.stringify(result);
     const rawText = opts.rawText != null ? String(opts.rawText) : resultStr;
@@ -6656,7 +6656,7 @@ function syncVisibleConversationTaskReplay(tasks) {
 
 function getActiveTaskDisplayName(task) {
     const _t = function (k) { return typeof window.t === 'function' ? window.t(k) : k; };
-    const unnamedTaskText = _t('tasks.unnamedTask');
+    const unnamedTaskText = '未命名任务';
     if (!task) return unnamedTaskText;
     const title = (task.title || '').trim();
     if (title) return title;
@@ -6770,20 +6770,20 @@ function renderActiveTasks(tasks) {
 
         const _t = function (k) { return typeof window.t === 'function' ? window.t(k) : k; };
         const statusMap = {
-            'running': _t('tasks.statusRunning'),
-            'cancelling': _t('tasks.statusCancelling'),
-            'cleaning': _t('tasks.statusCleaning'),
-            'cleanup_failed': _t('tasks.statusCleanupFailed'),
-            'cleanup_unconfirmed': _t('tasks.statusCleanupUnconfirmed'),
-            'failed': _t('tasks.statusFailed'),
-            'timeout': _t('tasks.statusTimeout'),
-            'cancelled': _t('tasks.statusCancelled'),
-            'completed': _t('tasks.statusCompleted')
+            'running': '执行中',
+            'cancelling': '取消中',
+            'cleaning': '清理中',
+            'cleanup_failed': '清理异常（自动重试）',
+            'cleanup_unconfirmed': '远端停止状态待确认',
+            'failed': '执行失败',
+            'timeout': '执行超时',
+            'cancelled': '已取消',
+            'completed': '已完成'
         };
-        const statusText = statusMap[task.status] || _t('tasks.statusRunning');
+        const statusText = statusMap[task.status] || '执行中';
         const isFinalStatus = ['failed', 'timeout', 'cancelled', 'completed', 'cleanup_unconfirmed'].includes(task.status);
         const taskDisplayName = getActiveTaskDisplayName(task);
-        const stopTaskBtnText = _t('tasks.stopTask');
+        const stopTaskBtnText = '停止任务';
 
         if (task && task.conversationId) {
             item.dataset.conversationId = task.conversationId;
@@ -7845,19 +7845,136 @@ function renderMcpStatsCombinedSection(topTools, totals, activeToolFilter, timel
         </section>`;
 }
 
+const MCP_MONITOR_TEXT = {
+        "toolRowNoCompletedAriaLabel": "{{name}}，{{total}} 次调用，暂无完成结果，点击查看执行记录",
+        "rateExcludesBlocked": "成功率仅统计成功和失败的调用，不包含安全拦截和终止",
+        "timelineBlockedLegend": "安全拦截",
+        "blockedCount": "安全拦截 {{n}}",
+        "statusBlocked": "已拦截",
+        "deselectAll": "取消全选",
+        "statusPending": "等待中",
+        "statusQueued": "排队中",
+        "statusSuccess": "成功",
+        "statusCompleted": "已完成",
+        "statusRunning": "执行中",
+        "statusFailed": "失败",
+        "statusHardTimeout": "执行超时",
+        "statusCancelled": "已终止",
+        "statusOrphaned": "孤儿任务",
+        "terminateExecution": "终止",
+        "loading": "加载中...",
+        "noStatsData": "暂无统计数据",
+        "noExecutions": "暂无执行记录",
+        "emptyHint": "在对话或任务中调用 MCP 工具后，执行记录将显示在此处",
+        "noRecordsWithFilter": "当前筛选条件下暂无记录",
+        "paginationInfo": "显示 {{start}}-{{end}} / 共 {{total}} 条记录",
+        "perPageLabel": "每页显示",
+        "firstPage": "首页",
+        "prevPage": "上一页",
+        "nextPage": "下一页",
+        "lastPage": "末页",
+        "pageInfo": "第 {{page}} / {{total}} 页",
+        "loadStatsError": "无法加载统计信息",
+        "loadExecutionsError": "无法加载执行记录",
+        "totalCalls": "总调用次数",
+        "successFailed": "成功 {{success}} / 失败 {{failed}}",
+        "successRate": "成功率",
+        "statsFromAllTools": "统计自全部工具调用",
+        "lastCall": "最近一次调用",
+        "lastRefreshTime": "最后刷新时间",
+        "noCallsYet": "暂无调用",
+        "noCompletedYet": "暂无有效完成",
+        "unknownTool": "未知工具",
+        "successFailedRate": "成功 {{success}} / 失败 {{failed}} · 成功率 {{rate}}%",
+        "topToolsTitle": "工具调用 Top {{n}}",
+        "toolRankingTitle": "工具调用排行",
+        "toolStatsTitle": "工具统计",
+        "toolStatsHint": "点击色条或列表行筛选下方执行记录；悬停联动高亮",
+        "scopeCumulative": "累计",
+        "scopeTimeline": "趋势时段",
+        "filterActive": "已筛选：{{tool}}",
+        "kpiScopeNote": "累计统计（全时段）",
+        "columnCalls": "调用",
+        "columnShare": "占比",
+        "columnSuccessRate": "成功率",
+        "rankingSummary": "Top {{n}} 占 {{pct}}% · 共 {{total}} 次调用",
+        "barVolumeLegend": "条长表示相对调用量，条内绿/红为成功/失败占比",
+        "clickToFilterTool": "点击行筛选下方执行记录",
+        "toolRowAriaLabel": "{{name}}，{{total}} 次调用，成功率 {{rate}}%，点击查看执行记录",
+        "successRateAria": "成功率 {{rate}}%",
+        "filterByToolTitle": "筛选工具：{{tool}}",
+        "clearToolFilter": "清除工具筛选",
+        "successCount": "成功 {{n}}",
+        "failedCount": "失败 {{n}}",
+        "neutralCount": "终止 {{n}}",
+        "rateHealthy": "运行平稳",
+        "rateWarning": "存在失败调用",
+        "rateCritical": "失败率偏高",
+        "statsSubtitle": "最后刷新 {{time}} · 共 {{count}} 个工具",
+        "retentionHint": "执行记录保留 {{days}} 天，超期自动清理",
+        "timelineTitle": "调用趋势",
+        "timelineHint": "全部工具合计，不按工具拆分",
+        "timelineRange24h": "24 小时",
+        "timelineRange7d": "7 天",
+        "timelineRange30d": "30 天",
+        "timelineSummary": "区间内 {{total}} 次 · 峰值 {{peak}}",
+        "timelineSparseHint": "该时段多数时间为 0，峰值 {{peak}} 次出现在 {{peakTime}}",
+        "timelineNoData": "该时段暂无调用",
+        "timelineLoading": "趋势加载中…",
+        "timelineEmptyHint": "切换时间范围查看其他时段，或在对话/任务中调用 MCP 工具",
+        "timelineLoadError": "无法加载调用趋势",
+        "timelineTotalLegend": "总调用",
+        "timelineFailedLegend": "失败",
+        "timelineTooltip": "{{time}}：{{total}} 次（失败 {{failed}}，安全拦截 {{blocked}}）",
+        "distTitle": "调用分布",
+        "distLegend": "扇区面积为占全部调用比例",
+        "distClickHint": "点击色条筛选执行记录",
+        "distHeaderHint": "共 {{n}} 次调用",
+        "distSegmentAria": "{{name}}，占 {{pct}}%，{{calls}} 次",
+        "distOthersNoFilter": "其他工具无法单独筛选",
+        "distTotalCalls": "共 {{n}} 次调用",
+        "distTop6Share": "Top {{n}} 占全部调用",
+        "distOthers": "其他工具",
+        "distCallsUnit": "{{n}} 次",
+        "riskTitle": "失败提醒",
+        "riskNone": "近期无失败调用",
+        "riskItem": "{{name}}：失败 {{failed}} / {{total}} 次",
+        "selectedToolTitle": "当前筛选",
+        "selectedToolEmpty": "点击左侧工具行，可筛选下方执行记录",
+        "selectedToolStats": "调用 {{total}} 次 · 成功 {{success}} · 失败 {{failed}} · 成功率 {{rate}}%",
+        "columnTool": "工具",
+        "columnStatus": "状态",
+        "columnStartTime": "开始时间",
+        "columnDuration": "耗时",
+        "columnActions": "操作",
+        "viewDetail": "查看详情",
+        "delete": "删除",
+        "deleteExecTitle": "删除此执行记录",
+        "deleteExecConfirmSingle": "确定要删除此执行记录吗？此操作不可恢复。",
+        "deleteExecFailed": "删除执行记录失败",
+        "execDeleted": "执行记录已删除",
+        "selectExecFirst": "请先选择要删除的执行记录",
+        "batchDeleteConfirm": "确定要删除选中的 {{count}} 条执行记录吗？此操作不可恢复。",
+        "batchDeleteSuccess": "成功删除 {{count}} 条执行记录",
+        "unknown": "未知",
+        "durationSeconds": "{{n}} 秒",
+        "durationMinutes": "{{minutes}} 分 {{seconds}} 秒",
+        "durationMinutesOnly": "{{minutes}} 分",
+        "durationHours": "{{hours}} 小时 {{minutes}} 分",
+        "durationHoursOnly": "{{hours}} 小时",
+};
+
 function mcpMonitorT(key, params) {
-    if (typeof window.t !== 'function') return '';
-    const fullKey = 'mcpMonitor.' + key;
-    const text = window.t(fullKey, {
-        ...(params || {}),
-        interpolation: { escapeValue: false },
-    });
-    if (!text || text === fullKey) return '';
+    let text = MCP_MONITOR_TEXT[key] || '';
+    if (!text) return '';
+    if (params) {
+        text = text.replace(/\{\{(\w+)\}\}/g, (m, name) => (params[name] !== undefined ? String(params[name]) : m));
+    }
     return text;
 }
 
-function monitorFallback(zhText, enText) {
-    return (typeof window.__locale === 'string' && window.__locale.startsWith('zh')) ? zhText : enText;
+function monitorFallback(zhText) {
+    return zhText;
 }
 
 function refreshMonitorPanelFromState() {
@@ -8892,13 +9009,13 @@ function renderMonitorPagination() {
     const endItem = total === 0 ? 0 : Math.min(page * pageSize, total);
     const paginationInfoText = mcpMonitorT('paginationInfo', { start: startItem, end: endItem, total: total })
         || (typeof window.t === 'function' ? window.t('mcpMonitor.paginationInfo', { start: startItem, end: endItem, total: total }) : `Show ${startItem}-${endItem} of ${total} records`);
-    const perPageLabel = mcpMonitorT('perPageLabel') || (typeof window.t === 'function' ? window.t('mcpMonitor.perPageLabel') : 'Per page');
-    const firstPageLabel = mcpMonitorT('firstPage') || (typeof window.t === 'function' ? window.t('mcp.firstPage') : 'First');
-    const prevPageLabel = mcpMonitorT('prevPage') || (typeof window.t === 'function' ? window.t('mcp.prevPage') : 'Previous');
+    const perPageLabel = mcpMonitorT('perPageLabel') || (typeof window.t === 'function' ? window.t('mcpMonitor.perPageLabel') : '每页显示');
+    const firstPageLabel = mcpMonitorT('firstPage') || (typeof window.t === 'function' ? window.t('mcp.firstPage') : '首页');
+    const prevPageLabel = mcpMonitorT('prevPage') || (typeof window.t === 'function' ? window.t('mcp.prevPage') : '上一页');
     const pageInfoText = mcpMonitorT('pageInfo', { page: page, total: totalPages || 1 })
         || (typeof window.t === 'function' ? window.t('mcp.pageInfo', { page: page, total: totalPages || 1 }) : `Page ${page} / ${totalPages || 1}`);
-    const nextPageLabel = mcpMonitorT('nextPage') || (typeof window.t === 'function' ? window.t('mcp.nextPage') : 'Next');
-    const lastPageLabel = mcpMonitorT('lastPage') || (typeof window.t === 'function' ? window.t('mcp.lastPage') : 'Last');
+    const nextPageLabel = mcpMonitorT('nextPage') || (typeof window.t === 'function' ? window.t('mcp.nextPage') : '下一页');
+    const lastPageLabel = mcpMonitorT('lastPage') || (typeof window.t === 'function' ? window.t('mcp.lastPage') : '末页');
     pagination.innerHTML = `
         <div class="pagination-info">
             <span>${escapeHtml(paginationInfoText)}</span>
@@ -8935,7 +9052,7 @@ async function deleteExecution(executionId) {
     }
     
     const deleteConfirmMsg = typeof window.t === 'function' ? window.t('mcpMonitor.deleteExecConfirmSingle') : '确定要删除此执行记录吗？此操作不可恢复。';
-    if (!confirm(deleteConfirmMsg)) {
+    if (!(await confirmAction(deleteConfirmMsg))) {
         return;
     }
     
@@ -9066,7 +9183,7 @@ async function batchDeleteExecutions() {
     }
     const count = ids.length;
     const batchConfirmMsg = typeof window.t === 'function' ? window.t('mcpMonitor.batchDeleteConfirm', { count: count }) : `确定要删除选中的 ${count} 条执行记录吗？此操作不可恢复。`;
-    if (!confirm(batchConfirmMsg)) {
+    if (!(await confirmAction(batchConfirmMsg))) {
         return;
     }
     
@@ -9149,9 +9266,9 @@ function refreshProgressAndTimelineI18n() {
     // 进度块内停止按钮：未禁用时统一为当前语言的「停止任务」（避免仍显示 Stop task）
     document.querySelectorAll('.progress-message .progress-stop').forEach(function (btn) {
         if (!btn.disabled && btn.id && btn.id.indexOf('-stop-btn') !== -1) {
-            const cancelling = _t('tasks.cancelling');
+            const cancelling = '取消中...';
             if (btn.textContent !== cancelling) {
-                btn.textContent = _t('tasks.stopTask');
+                btn.textContent = '停止任务';
             }
         }
     });
@@ -9159,7 +9276,7 @@ function refreshProgressAndTimelineI18n() {
         const timeline = btn.closest('.progress-container, .message-bubble') &&
             btn.closest('.progress-container, .message-bubble').querySelector('.progress-timeline');
         const expanded = timeline && timeline.classList.contains('expanded');
-        btn.textContent = expanded ? _t('tasks.collapseDetail') : _t('chat.expandDetail');
+        btn.textContent = expanded ? '收起详情' : '展开详情';
     });
     document.querySelectorAll('.progress-message').forEach(function (msgEl) {
         const raw = msgEl.dataset.progressRawMessage;
@@ -9191,14 +9308,14 @@ function refreshProgressAndTimelineI18n() {
             if (item.dataset.orchestration === 'plan_execute' && scope === 'main') {
                 const phase = typeof translatePlanExecuteAgentName === 'function'
                     ? translatePlanExecuteAgentName(item.dataset.einoAgent) : (item.dataset.einoAgent || '');
-                titleSpan.textContent = _t('chat.einoPlanExecuteRound', { n: n, phase: phase });
+                titleSpan.textContent = `Plan-Execute · 第 ${n} 轮 · ${phase}`;
             } else if (scope === 'main') {
-                titleSpan.textContent = _t('chat.einoOrchestratorRound', { n: n });
+                titleSpan.textContent = `主代理 · 第 ${n} 轮`;
             } else if (scope === 'sub') {
                 const agent = item.dataset.einoAgent || '';
-                titleSpan.textContent = _t('chat.einoSubAgentStep', { n: n, agent: agent });
+                titleSpan.textContent = `子代理 ${agent} · 第 ${n} 步`;
             } else {
-                titleSpan.textContent = ap + _t('chat.iterationRound', { n: n });
+                titleSpan.textContent = ap + `第 ${n} 轮迭代`;
             }
         } else if (type === 'thinking') {
             if (item.dataset.responseStreamPlaceholder === '1' && typeof einoMainStreamPlanningTitle === 'function') {
@@ -9212,10 +9329,10 @@ function refreshProgressAndTimelineI18n() {
                     einoAgent: item.dataset.einoAgent
                 });
             } else {
-                titleSpan.textContent = ap + _t('chat.aiThinking');
+                titleSpan.textContent = ap + 'AI思考';
             }
         } else if (type === 'reasoning_chain') {
-            titleSpan.textContent = ap + _t('chat.reasoningChain');
+            titleSpan.textContent = ap + '推理过程';
         } else if (type === 'planning') {
             if (item.dataset.orchestration && typeof einoMainStreamPlanningTitle === 'function') {
                 titleSpan.textContent = einoMainStreamPlanningTitle({
@@ -9223,30 +9340,30 @@ function refreshProgressAndTimelineI18n() {
                     einoAgent: item.dataset.einoAgent || ''
                 });
             } else {
-                titleSpan.textContent = ap + _t('chat.planning');
+                titleSpan.textContent = ap + '规划中';
             }
         } else if (type === 'tool_calls_detected' && item.dataset.toolCallsCount != null) {
             const count = parseInt(item.dataset.toolCallsCount, 10) || 0;
-            titleSpan.textContent = ap + _t('chat.toolCallsDetected', { count: count });
+            titleSpan.textContent = ap + `检测到 ${count} 个工具调用`;
         } else if (type === 'tool_call' && (item.dataset.toolName !== undefined || item.dataset.toolIndex !== undefined)) {
-            const name = (item.dataset.toolName != null && item.dataset.toolName !== '') ? item.dataset.toolName : _t('chat.unknownTool');
+            const name = (item.dataset.toolName != null && item.dataset.toolName !== '') ? item.dataset.toolName : '未知工具';
             const index = parseInt(item.dataset.toolIndex, 10) || 0;
             const total = parseInt(item.dataset.toolTotal, 10) || 0;
             const callTitle = typeof formatToolCallTimelineTitle === 'function'
                 ? formatToolCallTimelineTitle(name, index, total)
-                : _t('chat.callTool', { name: name, index: index, total: total });
+                : `调用工具: ${name} (${index}/${total})`;
             titleSpan.textContent = ap + callTitle;
             if (item.dataset.toolDisplayStatus) {
                 applyToolCallStatus(item, item.dataset.toolDisplayStatus);
             }
         } else if (type === 'tool_result' && (item.dataset.toolName !== undefined || item.dataset.toolSuccess !== undefined)) {
-            const name = (item.dataset.toolName != null && item.dataset.toolName !== '') ? item.dataset.toolName : _t('chat.unknownTool');
+            const name = (item.dataset.toolName != null && item.dataset.toolName !== '') ? item.dataset.toolName : '未知工具';
             const displayStatus = item.dataset.toolDisplayStatus || '';
             const backgroundRunning = displayStatus === 'background_running';
             const success = item.dataset.toolSuccess === '1';
-             titleSpan.textContent = ap + (displayStatus === 'blocked' ? _t('chat.toolExecBlocked', { name: name }) : backgroundRunning ? (getBackgroundRunningToolLabel() + ': ' + name) : (success ? _t('chat.toolExecComplete', { name: name }) : _t('chat.toolExecFailed', { name: name })));
+             titleSpan.textContent = ap + (displayStatus === 'blocked' ? `工具 ${name} 已拦截` : backgroundRunning ? (getBackgroundRunningToolLabel() + ': ' + name) : (success ? `工具 ${name} 执行完成` : `工具 ${name} 执行失败`));
         } else if (type === 'eino_agent_reply') {
-            titleSpan.textContent = ap + _t('chat.einoAgentReplyTitle');
+            titleSpan.textContent = ap + '子代理回复';
         } else if (type === 'eino_usage_summary') {
             const usageData = {
                 modelCalls: item.dataset.modelCalls,
@@ -9263,9 +9380,9 @@ function refreshProgressAndTimelineI18n() {
                 setTimelineItemContentStreamPlain(contentEl, formatEinoUsageSummaryMessage(usageData));
             }
         } else if (type === 'cancelled') {
-            titleSpan.textContent = _t('chat.taskCancelled');
+            titleSpan.textContent = '任务已取消';
         } else if (type === 'user_interrupt_continue') {
-            titleSpan.textContent = _t('chat.userInterruptContinueTitle');
+            titleSpan.textContent = '⏸️ 用户中断并继续';
         } else if (type === 'progress' && item.dataset.progressMessage !== undefined) {
             titleSpan.textContent = typeof window.translateProgressMessage === 'function' ? window.translateProgressMessage(item.dataset.progressMessage) : item.dataset.progressMessage;
         }
@@ -9292,7 +9409,7 @@ function refreshProgressAndTimelineI18n() {
         const detailsId = 'process-details-' + assistantId;
         const timeline = document.getElementById(detailsId) && document.getElementById(detailsId).querySelector('.progress-timeline');
         const expanded = timeline && timeline.classList.contains('expanded');
-        span.textContent = expanded ? _t('tasks.collapseDetail') : _t('chat.expandDetail');
+        span.textContent = expanded ? '收起详情' : '展开详情';
     });
 
     document.querySelectorAll('#chat-messages .message.assistant').forEach(function (msgEl) {
@@ -9304,8 +9421,8 @@ function refreshProgressAndTimelineI18n() {
         }
     });
 
-    const copyLabel = _t('common.copy');
-    const copyTitle = _t('chat.copyMessageTitle');
+    const copyLabel = '复制';
+    const copyTitle = '复制消息内容';
     document.querySelectorAll('#chat-messages .message-copy-btn').forEach(function (btn) {
         if (btn.dataset.copySuccessActive === '1') return;
         const span = btn.querySelector('span');

@@ -1,7 +1,4 @@
 // Skills管理相关功能
-function _t(key, opts) {
-    return typeof window.t === 'function' ? window.t(key, opts) : key;
-}
 let skillsList = [];
 let currentEditingSkillName = null;
 let skillModalAddMode = true;
@@ -120,7 +117,7 @@ async function loadSkills(page = 1, pageSize = null) {
         
         const response = await apiFetch(url);
         if (!response.ok) {
-            throw new Error(_t('skills.loadListFailed'));
+            throw new Error('加载skills列表失败');
         }
         const data = await response.json();
         skillsList = data.skills || [];
@@ -131,10 +128,10 @@ async function loadSkills(page = 1, pageSize = null) {
         updateSkillsManagementStats();
     } catch (error) {
         console.error('加载skills列表失败:', error);
-        showNotification(_t('skills.loadListFailed') + ': ' + error.message, 'error');
+        showNotification('加载skills列表失败' + ': ' + error.message, 'error');
         const skillsListEl = document.getElementById('skills-list');
         if (skillsListEl) {
-            skillsListEl.innerHTML = '<div class="empty-state">' + _t('skills.loadFailedShort') + ': ' + escapeHtml(error.message) + '</div>';
+            skillsListEl.innerHTML = '<div class="empty-state">' + '加载失败' + ': ' + escapeHtml(error.message) + '</div>';
         }
     }
 }
@@ -149,7 +146,7 @@ function renderSkillsList() {
 
     if (filteredSkills.length === 0) {
         skillsListEl.innerHTML = '<div class="empty-state">' + 
-            (skillsSearchKeyword ? _t('skills.noMatch') : _t('skills.noSkills')) + 
+            (skillsSearchKeyword ? '没有找到匹配的skills' : '暂无skills，点击"创建Skill"创建第一个skill') + 
             '</div>';
         // 搜索时隐藏分页
         const paginationContainer = document.getElementById('skills-pagination');
@@ -161,12 +158,12 @@ function renderSkillsList() {
 
     skillsListEl.innerHTML = filteredSkills.map(skill => {
         const sid = skill.id || skill.name || '';
-        const ver = skill.version ? _t('skills.cardVersion', { version: skill.version }) : '';
+        const ver = skill.version ? `v${skill.version}` : '';
         const sc = typeof skill.script_count === 'number' && skill.script_count > 0
-            ? _t('skills.cardScripts', { count: skill.script_count })
+            ? `${skill.script_count} 个脚本`
             : '';
         const fc = typeof skill.file_count === 'number' && skill.file_count > 0
-            ? _t('skills.cardFiles', { count: skill.file_count })
+            ? `${skill.file_count} 个文件`
             : '';
         const metaItems = [ver, fc, sc].filter(Boolean);
         const tags = Array.isArray(skill.tags) ? skill.tags.filter(Boolean) : [];
@@ -183,13 +180,13 @@ function renderSkillsList() {
                             <h3 class="skill-card-title">${escapeHtml(skill.name || sid)}</h3>
                             ${metaItems.length ? `<div class="skill-card-meta">${metaItems.map(item => `<span>${escapeHtml(item)}</span>`).join('')}</div>` : ''}
                         </div>
-                        <div class="skill-card-description">${escapeHtml(skill.description || _t('skills.noDescription'))}</div>
+                        <div class="skill-card-description">${escapeHtml(skill.description || '无描述')}</div>
                         ${tagsHtml}
                     </div>
                     <div class="skill-card-actions">
-                        <button type="button" class="btn-secondary btn-small" data-skill-view="${escapeAttr(sid)}">${_t('common.view')}</button>
-                        <button type="button" class="btn-secondary btn-small" data-skill-edit="${escapeAttr(sid)}">${_t('common.edit')}</button>
-                        <button type="button" class="btn-secondary btn-small btn-danger" data-skill-delete="${escapeAttr(sid)}">${_t('common.delete')}</button>
+                        <button type="button" class="btn-secondary btn-small" data-skill-view="${escapeAttr(sid)}">${'查看'}</button>
+                        <button type="button" class="btn-secondary btn-small" data-skill-edit="${escapeAttr(sid)}">${'编辑'}</button>
+                        <button type="button" class="btn-secondary btn-small btn-danger" data-skill-delete="${escapeAttr(sid)}">${'删除'}</button>
                     </div>
                 </div>
             </div>
@@ -241,13 +238,13 @@ function renderSkillsPagination() {
     
     let paginationHTML = '<div class="pagination">';
     
-    const paginationShowText = _t('skillsPage.paginationShow', { start, end, total });
-    const perPageLabelText = _t('skillsPage.perPageLabel');
-    const firstPageText = _t('skillsPage.firstPage');
-    const prevPageText = _t('skillsPage.prevPage');
-    const pageOfText = _t('skillsPage.pageOf', { current: currentPage, total: totalPages || 1 });
-    const nextPageText = _t('skillsPage.nextPage');
-    const lastPageText = _t('skillsPage.lastPage');
+    const paginationShowText = `显示 ${start}-${end} / 共 ${total} 条`;
+    const perPageLabelText = '每页显示';
+    const firstPageText = '首页';
+    const prevPageText = '上一页';
+    const pageOfText = `第 ${currentPage} / ${totalPages || 1} 页`;
+    const nextPageText = '下一页';
+    const lastPageText = '尾页';
     // 左侧：显示范围信息和每页数量选择器（参考MCP样式）
     paginationHTML += `
         <div class="pagination-info">
@@ -407,7 +404,7 @@ async function searchSkills() {
         try {
             const response = await apiFetch(`/api/skills?search=${encodeURIComponent(skillsSearchKeyword)}&limit=10000&offset=0`);
             if (!response.ok) {
-                throw new Error(_t('skills.loadListFailed'));
+                throw new Error('加载skills列表失败');
             }
             const data = await response.json();
             skillsList = data.skills || [];
@@ -422,7 +419,7 @@ async function searchSkills() {
             updateSkillsManagementStats();
         } catch (error) {
             console.error('搜索skills失败:', error);
-            showNotification(_t('skills.searchFailed') + ': ' + error.message, 'error');
+            showNotification('搜索失败' + ': ' + error.message, 'error');
         }
     } else {
         // 没有搜索关键词时，恢复分页加载
@@ -448,7 +445,7 @@ function clearSkillsSearch() {
 // 刷新skills
 async function refreshSkills() {
     await loadSkills(skillsPagination.currentPage, skillsPagination.pageSize);
-    showNotification(_t('skills.refreshed'), 'success');
+    showNotification('已刷新', 'success');
 }
 
 // 显示添加skill模态框
@@ -468,11 +465,11 @@ function wireSkillModalOnce() {
             const inp = document.getElementById('skill-new-file-path');
             const p = (inp && inp.value || '').trim();
             if (!p) {
-                showNotification(_t('skillModal.newFilePathRequired'), 'error');
+                showNotification('请填写新文件路径', 'error');
                 return;
             }
             if (p.includes('..') || p.startsWith('/')) {
-                showNotification(_t('skillModal.newFilePathInvalid'), 'error');
+                showNotification('路径无效（禁止 .. 与绝对路径）', 'error');
                 return;
             }
             selectSkillPackageFile(currentEditingSkillName, p, { force: true, freshContent: '' });
@@ -498,7 +495,7 @@ function showAddSkillModal() {
     if (pkg) pkg.style.display = 'none';
     if (addEd) addEd.style.display = 'block';
 
-    document.getElementById('skill-modal-title').textContent = _t('skills.addSkill');
+    document.getElementById('skill-modal-title').textContent = '添加Skill';
     document.getElementById('skill-name').value = '';
     document.getElementById('skill-name').disabled = false;
     document.getElementById('skill-description').value = '';
@@ -519,7 +516,7 @@ function renderSkillPackageTree() {
     const rows = (skillPackageFiles || []).filter(f => f.path && f.path !== '.').sort((a, b) =>
         String(a.path).localeCompare(String(b.path)));
     if (rows.length === 0) {
-        el.innerHTML = '<div class="empty-state" style="padding:8px;">' + escapeHtml(_t('skillModal.noPackageFiles')) + '</div>';
+        el.innerHTML = '<div class="empty-state" style="padding:8px;">' + escapeHtml('未列出文件') + '</div>';
         return;
     }
     el.innerHTML = rows.map(f => {
@@ -527,13 +524,13 @@ function renderSkillPackageTree() {
         const indent = 8 + skillPackagePathDepth(path) * 14;
         if (f.is_dir) {
             const dirLabel = path.endsWith('/') ? path : path + '/';
-            return `<div class="skill-tree-row skill-tree-dir" style="padding-left:${indent}px" title="${escapeHtml(_t('skillModal.folderHint'))}">` +
+            return `<div class="skill-tree-row skill-tree-dir" style="padding-left:${indent}px" title="${escapeHtml('文件夹（不可编辑）')}">` +
  `<span class="skill-tree-icon" aria-hidden="true"></span>` +
                 `<span class="skill-tree-label">${escapeHtml(dirLabel)}</span>` +
                 `</div>`;
         }
         const selected = path === skillActivePath ? ' is-selected' : '';
-        return `<div class="skill-tree-row skill-tree-file${selected}" style="padding-left:${indent}px" data-skill-tree-path="${escapeAttr(path)}" title="${escapeAttr(_t('skillModal.clickToEdit'))}">` +
+        return `<div class="skill-tree-row skill-tree-file${selected}" style="padding-left:${indent}px" data-skill-tree-path="${escapeAttr(path)}" title="${escapeAttr('点击编辑此文件')}">` +
  `<span class="skill-tree-icon" aria-hidden="true"></span>` +
             `<span class="skill-tree-label">${escapeHtml(path)}</span>` +
             `</div>`;
@@ -552,11 +549,11 @@ async function selectSkillPackageFile(skillId, path, opts) {
         ? opts.freshContent
         : null;
     if (path !== 'SKILL.md' && skillDescriptionDirty) {
-        showNotification(_t('skillModal.saveDescriptionFirst'), 'error');
+        showNotification('请先在 SKILL.md 中保存描述，再切换到辅助文件', 'error');
         return;
     }
     if (!force && skillFileDirty) {
-        if (!confirm(_t('skillModal.unsavedSwitch'))) {
+        if (!(await confirmAction('当前文件有未保存修改，确定切换？'))) {
             return;
         }
     }
@@ -580,13 +577,13 @@ async function selectSkillPackageFile(skillId, path, opts) {
     try {
         if (path === 'SKILL.md') {
             const response = await apiFetch(`/api/skills/${encodeURIComponent(skillId)}?depth=full`);
-            if (!response.ok) throw new Error(_t('skills.loadDetailFailed'));
+            if (!response.ok) throw new Error('加载skill详情失败');
             const data = await response.json();
             const skill = data.skill;
             ta.value = skill && skill.content != null ? skill.content : '';
         } else {
             const response = await apiFetch(`/api/skills/${encodeURIComponent(skillId)}/file?path=${encodeURIComponent(path)}`);
-            if (!response.ok) throw new Error(_t('skills.loadDetailFailed'));
+            if (!response.ok) throw new Error('加载skill详情失败');
             const data = await response.json();
             ta.value = data.content != null ? data.content : '';
         }
@@ -594,7 +591,7 @@ async function selectSkillPackageFile(skillId, path, opts) {
         renderSkillPackageTree();
     } catch (e) {
         console.error(e);
-        showNotification(_t('skills.loadDetailFailed') + ': ' + e.message, 'error');
+        showNotification('加载skill详情失败' + ': ' + e.message, 'error');
     }
 }
 
@@ -612,7 +609,7 @@ async function editSkill(skillId) {
     const addEd = document.getElementById('skill-add-editor');
     if (pkg) pkg.style.display = 'block';
     if (addEd) addEd.style.display = 'none';
-    document.getElementById('skill-modal-title').textContent = _t('skills.editSkill');
+    document.getElementById('skill-modal-title').textContent = '编辑Skill';
     document.getElementById('skill-name').value = '';
     document.getElementById('skill-name').disabled = true;
     document.getElementById('skill-description').value = '';
@@ -625,7 +622,7 @@ async function editSkill(skillId) {
             apiFetch(`/api/skills/${encodeURIComponent(skillId)}/files`)
         ]);
         if (!detailRes.ok) {
-            throw new Error(_t('skills.loadDetailFailed'));
+            throw new Error('加载skill详情失败');
         }
         const data = await detailRes.json();
         const skill = data.skill;
@@ -648,7 +645,7 @@ async function editSkill(skillId) {
     } catch (error) {
         closeSkillModal();
         console.error('加载skill详情失败:', error);
-        showNotification(_t('skills.loadDetailFailed') + ': ' + error.message, 'error');
+        showNotification('加载skill详情失败' + ': ' + error.message, 'error');
     }
 }
 
@@ -657,7 +654,7 @@ async function viewSkill(skillId) {
     try {
         const sumRes = await apiFetch(`/api/skills/${encodeURIComponent(skillId)}?depth=summary`);
         if (!sumRes.ok) {
-            throw new Error(_t('skills.loadDetailFailed'));
+            throw new Error('加载skill详情失败');
         }
         const sumData = await sumRes.json();
         const sumSkill = sumData.skill;
@@ -665,15 +662,15 @@ async function viewSkill(skillId) {
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.id = 'skill-view-modal';
-        const viewTitle = _t('skills.viewSkillTitle', { name: sumSkill.name || skillId });
-        const descLabel = _t('skills.descriptionLabel');
-        const pathLabel = _t('skills.pathLabel');
-        const modTimeLabel = _t('skills.modTimeLabel');
-        const contentLabel = _t('skills.contentLabel');
-        const closeBtn = _t('common.close');
-        const editBtn = _t('common.edit');
-        const loadFullLabel = _t('skills.loadFullBody');
-        const scriptsLabel = _t('skills.scriptsHeading');
+        const viewTitle = `查看Skill: ${sumSkill.name || skillId}`;
+        const descLabel = '描述:';
+        const pathLabel = '路径:';
+        const modTimeLabel = '修改时间:';
+        const contentLabel = '内容:';
+        const closeBtn = '关闭';
+        const editBtn = '编辑';
+        const loadFullLabel = '加载完整正文';
+        const scriptsLabel = '脚本:';
 
         let scriptsBlock = '';
         if (Array.isArray(sumSkill.scripts) && sumSkill.scripts.length > 0) {
@@ -692,12 +689,12 @@ async function viewSkill(skillId) {
                     <span class="modal-close" data-skill-view-close>&times;</span>
                 </div>
                 <div class="modal-body" style="overflow-y: auto; max-height: calc(90vh - 120px);">
-                    ${sumSkill.version ? `<div style="margin-bottom: 8px;"><strong>${escapeHtml(_t('skills.versionLabel'))}</strong> ${escapeHtml(sumSkill.version)}</div>` : ''}
+                    ${sumSkill.version ? `<div style="margin-bottom: 8px;"><strong>${escapeHtml('版本:')}</strong> ${escapeHtml(sumSkill.version)}</div>` : ''}
                     ${sumSkill.description ? `<div style="margin-bottom: 16px;"><strong>${escapeHtml(descLabel)}</strong> ${escapeHtml(sumSkill.description)}</div>` : ''}
                     ${scriptsBlock}
                     <div style="margin-bottom: 8px;"><strong>${escapeHtml(pathLabel)}</strong> ${escapeHtml(sumSkill.path || '')}</div>
                     <div style="margin-bottom: 16px;"><strong>${escapeHtml(modTimeLabel)}</strong> ${escapeHtml(sumSkill.mod_time || '')}</div>
-                    <div style="margin-bottom: 8px;"><strong>${escapeHtml(contentLabel)}</strong> <span style="opacity:0.8;font-size:12px;">${escapeHtml(_t('skills.summaryHint'))}</span></div>
+                    <div style="margin-bottom: 8px;"><strong>${escapeHtml(contentLabel)}</strong> <span style="opacity:0.8;font-size:12px;">${escapeHtml('（摘要 — 可加载完整正文）')}</span></div>
                     <pre id="skill-view-body" style="padding: 16px; border-radius: 4px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; border: 1px solid var(--border-color);">${escapeHtml(sumSkill.content || '')}</pre>
                 </div>
                 <div class="modal-footer">
@@ -723,18 +720,18 @@ async function viewSkill(skillId) {
             btn.disabled = true;
             try {
                 const fullRes = await apiFetch(`/api/skills/${encodeURIComponent(skillId)}?depth=full`);
-                if (!fullRes.ok) throw new Error(_t('skills.loadDetailFailed'));
+                if (!fullRes.ok) throw new Error('加载skill详情失败');
                 const fullData = await fullRes.json();
                 pre.textContent = fullData.skill && fullData.skill.content != null ? fullData.skill.content : '';
             } catch (e) {
-                showNotification(_t('skills.loadFullFailed') + ': ' + e.message, 'error');
+                showNotification('加载完整正文失败' + ': ' + e.message, 'error');
             } finally {
                 btn.disabled = false;
             }
         });
     } catch (error) {
         console.error('查看skill失败:', error);
-        showNotification(_t('skills.viewFailed') + ': ' + error.message, 'error');
+        showNotification('查看skill失败' + ': ' + error.message, 'error');
     }
 }
 
@@ -769,24 +766,24 @@ async function saveSkill() {
     const description = document.getElementById('skill-description').value.trim();
 
     if (!name) {
-        showNotification(_t('skills.nameRequired'), 'error');
+        showNotification('skill名称不能为空', 'error');
         return;
     }
 
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)) {
-        showNotification(_t('skills.nameInvalid'), 'error');
+        showNotification('目录名须为小写字母、数字与连字符（与 Agent Skills 的 name 一致）', 'error');
         return;
     }
 
     if (skillModalAddMode || !currentEditingSkillName) {
         if (!description) {
-            showNotification(_t('skills.descriptionRequired'), 'error');
+            showNotification('描述不能为空（将写入 SKILL.md 的 front matter）', 'error');
             return;
         }
         const content = (document.getElementById('skill-content-add') || {}).value;
         const body = (content || '').trim();
         if (!body) {
-            showNotification(_t('skills.contentRequired'), 'error');
+            showNotification('skill内容不能为空', 'error');
             return;
         }
     }
@@ -795,7 +792,7 @@ async function saveSkill() {
     const saveBtn = document.querySelector('#skill-modal .btn-primary');
     if (saveBtn) {
         saveBtn.disabled = true;
-        saveBtn.textContent = _t('skills.saving');
+        saveBtn.textContent = '保存中...';
     }
 
     try {
@@ -809,9 +806,9 @@ async function saveSkill() {
             });
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.error || _t('skills.saveFailed'));
+                throw new Error(error.error || '保存skill失败');
             }
-            showNotification(_t('skills.createdSuccess'), 'success');
+            showNotification('skill已创建', 'success');
             closeSkillModal();
             await loadSkills(skillsPagination.currentPage, skillsPagination.pageSize);
             return;
@@ -822,7 +819,7 @@ async function saveSkill() {
         const raw = ta ? ta.value : '';
         if (path === 'SKILL.md') {
             if (!raw.trim()) {
-                showNotification(_t('skills.contentRequired'), 'error');
+                showNotification('skill内容不能为空', 'error');
                 return;
             }
             const response = await apiFetch(`/api/skills/${encodeURIComponent(currentEditingSkillName)}`, {
@@ -835,7 +832,7 @@ async function saveSkill() {
             });
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.error || _t('skills.saveFailed'));
+                throw new Error(error.error || '保存skill失败');
             }
         } else {
             const response = await apiFetch(`/api/skills/${encodeURIComponent(currentEditingSkillName)}/file`, {
@@ -845,13 +842,13 @@ async function saveSkill() {
             });
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.error || _t('skills.saveFailed'));
+                throw new Error(error.error || '保存skill失败');
             }
         }
 
         skillFileDirty = false;
         if (path === 'SKILL.md') skillDescriptionDirty = false;
-        showNotification(_t('skills.saveSuccess'), 'success');
+        showNotification('skill已更新', 'success');
         const filesRes = await apiFetch(`/api/skills/${encodeURIComponent(currentEditingSkillName)}/files`);
         if (filesRes.ok) {
             const fd = await filesRes.json();
@@ -861,12 +858,12 @@ async function saveSkill() {
         await loadSkills(skillsPagination.currentPage, skillsPagination.pageSize);
     } catch (error) {
         console.error('保存skill失败:', error);
-        showNotification(_t('skills.saveFailed') + ': ' + error.message, 'error');
+        showNotification('保存skill失败' + ': ' + error.message, 'error');
     } finally {
         isSavingSkill = false;
         if (saveBtn) {
             saveBtn.disabled = false;
-            saveBtn.textContent = _t('common.save');
+            saveBtn.textContent = '保存';
         }
     }
 }
@@ -887,13 +884,20 @@ async function deleteSkill(skillName) {
     }
 
     // 构建确认消息
-    let confirmMessage = _t('skills.deleteConfirm', { name: skillName });
+    let confirmMessage = `确定要删除skill "${skillName}" 吗？此操作不可恢复。`;
     if (boundRoles.length > 0) {
         const rolesList = boundRoles.join('、');
-        confirmMessage = _t('skills.deleteConfirmWithRoles', { name: skillName, count: boundRoles.length, roles: rolesList });
+        confirmMessage = `确定要删除skill "${skillName}" 吗？
+
+⚠️ 该skill当前已被以下 ${boundRoles.length} 个角色绑定：
+${rolesList}
+
+删除后，系统将自动从这些角色中移除该skill的绑定。
+
+此操作不可恢复，是否继续？`;
     }
 
-    if (!confirm(confirmMessage)) {
+    if (!(await confirmAction(confirmMessage))) {
         return;
     }
 
@@ -904,14 +908,14 @@ async function deleteSkill(skillName) {
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || _t('skills.deleteFailed'));
+            throw new Error(error.error || '删除skill失败');
         }
 
         const data = await response.json();
-        let successMessage = _t('skills.deleteSuccess');
+        let successMessage = 'skill已删除';
         if (data.affected_roles && data.affected_roles.length > 0) {
             const rolesList = data.affected_roles.join('、');
-            successMessage = _t('skills.deleteSuccessWithRoles', { count: data.affected_roles.length, roles: rolesList });
+            successMessage = `skill已删除，已自动从 ${data.affected_roles.length} 个角色中移除绑定：${rolesList}`;
         }
         showNotification(successMessage, 'success');
         
@@ -923,7 +927,7 @@ async function deleteSkill(skillName) {
         await loadSkills(pageToLoad, skillsPagination.pageSize);
     } catch (error) {
         console.error('删除skill失败:', error);
-        showNotification(_t('skills.deleteFailed') + ': ' + error.message, 'error');
+        showNotification('删除skill失败' + ': ' + error.message, 'error');
     }
 }
 
@@ -934,7 +938,7 @@ async function loadSkillsMonitor() {
     try {
         const response = await apiFetch('/api/skills/stats');
         if (!response.ok) {
-            throw new Error(_t('skills.loadStatsFailed'));
+            throw new Error('加载skills监控数据失败');
         }
         const data = await response.json();
         
@@ -950,14 +954,14 @@ async function loadSkillsMonitor() {
         renderSkillsMonitor();
     } catch (error) {
         console.error('加载skills监控数据失败:', error);
-        showNotification(_t('skills.loadStatsFailed') + ': ' + error.message, 'error');
+        showNotification('加载skills监控数据失败' + ': ' + error.message, 'error');
         const statsEl = document.getElementById('skills-stats');
         if (statsEl) {
-            statsEl.innerHTML = '<div class="monitor-error">' + _t('skills.loadStatsErrorShort') + ': ' + escapeHtml(error.message) + '</div>';
+            statsEl.innerHTML = '<div class="monitor-error">' + '无法加载统计信息' + ': ' + escapeHtml(error.message) + '</div>';
         }
         const monitorListEl = document.getElementById('skills-monitor-list');
         if (monitorListEl) {
-            monitorListEl.innerHTML = '<div class="monitor-error">' + _t('skills.loadCallStatsError') + ': ' + escapeHtml(error.message) + '</div>';
+            monitorListEl.innerHTML = '<div class="monitor-error">' + '无法加载调用统计' + ': ' + escapeHtml(error.message) + '</div>';
         }
     }
 }
@@ -973,23 +977,23 @@ function renderSkillsMonitor() {
         
         statsEl.innerHTML = `
             <div class="monitor-stat-card skills-stat-card skills-stat-card--total">
-                <div class="monitor-stat-label">${_t('skills.totalSkillsCount')}</div>
+                <div class="monitor-stat-label">${'总Skills数'}</div>
                 <div class="monitor-stat-value">${skillsStats.total}</div>
             </div>
             <div class="monitor-stat-card skills-stat-card skills-stat-card--calls">
-                <div class="monitor-stat-label">${_t('skills.totalCallsCount')}</div>
+                <div class="monitor-stat-label">${'总调用次数'}</div>
                 <div class="monitor-stat-value">${skillsStats.totalCalls}</div>
             </div>
             <div class="monitor-stat-card skills-stat-card skills-stat-card--success">
-                <div class="monitor-stat-label">${_t('skills.successfulCalls')}</div>
+                <div class="monitor-stat-label">${'成功调用'}</div>
                 <div class="monitor-stat-value is-success">${skillsStats.totalSuccess}</div>
             </div>
             <div class="monitor-stat-card skills-stat-card skills-stat-card--failed">
-                <div class="monitor-stat-label">${_t('skills.failedCalls')}</div>
+                <div class="monitor-stat-label">${'失败调用'}</div>
                 <div class="monitor-stat-value is-danger">${skillsStats.totalFailed}</div>
             </div>
             <div class="monitor-stat-card skills-stat-card skills-stat-card--rate">
-                <div class="monitor-stat-label">${_t('skills.successRate')}</div>
+                <div class="monitor-stat-label">${'成功率'}</div>
                 <div class="monitor-stat-value">${successRate}%</div>
             </div>
         `;
@@ -1003,7 +1007,7 @@ function renderSkillsMonitor() {
     
     // 如果没有统计数据，显示空状态
     if (stats.length === 0) {
-        monitorListEl.innerHTML = '<div class="monitor-empty">' + _t('skills.noCallRecords') + '</div>';
+        monitorListEl.innerHTML = '<div class="monitor-empty">' + '暂无Skills调用记录' + '</div>';
         return;
     }
 
@@ -1021,12 +1025,12 @@ function renderSkillsMonitor() {
         <table class="monitor-table skills-monitor-table">
             <thead>
                 <tr>
-                    <th>${_t('skills.skillName')}</th>
-                    <th>${_t('skills.totalCalls')}</th>
-                    <th>${_t('skills.success')}</th>
-                    <th>${_t('skills.failure')}</th>
-                    <th>${_t('skills.successRate')}</th>
-                    <th>${_t('skills.lastCallTime')}</th>
+                    <th>${'Skill名称'}</th>
+                    <th>${'总调用'}</th>
+                    <th>${'成功'}</th>
+                    <th>${'失败'}</th>
+                    <th>${'成功率'}</th>
+                    <th>${'最后调用时间'}</th>
                 </tr>
             </thead>
             <tbody>
@@ -1062,12 +1066,12 @@ function renderSkillsMonitor() {
 // 刷新skills监控
 async function refreshSkillsMonitor() {
     await loadSkillsMonitor();
-    showNotification(_t('skills.refreshed'), 'success');
+    showNotification('已刷新', 'success');
 }
 
 // 清空skills统计数据
 async function clearSkillsStats() {
-    if (!confirm(_t('skills.clearStatsConfirm'))) {
+    if (!(await confirmAction('确定要清空所有Skills统计数据吗？此操作不可恢复。'))) {
         return;
     }
 
@@ -1078,15 +1082,15 @@ async function clearSkillsStats() {
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || _t('skills.clearStatsFailed'));
+            throw new Error(error.error || '清空统计数据失败');
         }
 
-        showNotification(_t('skills.statsCleared'), 'success');
+        showNotification('已清空所有Skills统计数据', 'success');
         // 重新加载统计数据
         await loadSkillsMonitor();
     } catch (error) {
         console.error('清空统计数据失败:', error);
-        showNotification(_t('skills.clearStatsFailed') + ': ' + error.message, 'error');
+        showNotification('清空统计数据失败' + ': ' + error.message, 'error');
     }
 }
 

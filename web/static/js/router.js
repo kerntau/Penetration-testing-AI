@@ -181,11 +181,32 @@ window.switchPage = switchPage;
 
 // 更新导航状态（扁平导航：每个页面直接对应一个导航项）
 function updateNavState(pageId) {
+    const isTokenSection = String(window.location.hash || '').includes('section=token-usage');
     document.querySelectorAll('.nav-item').forEach((item) => {
-        item.classList.toggle('active', item.dataset.page === pageId);
+        if (item.dataset.page !== pageId) {
+            item.classList.remove('active');
+            return;
+        }
+        // 设置页拆成两个导航项，按当前分区决定高亮哪一个
+        if (pageId === 'settings' && item.dataset.settingsSection) {
+            const wanted = isTokenSection ? 'token-usage' : 'basic';
+            item.classList.toggle('active', item.dataset.settingsSection === wanted);
+            return;
+        }
+        item.classList.add('active');
     });
 }
 
+/** 打开设置页并定位到指定分区（侧边栏两个导航项共用 settings 页） */
+function openSettingsSection(section) {
+    const target = section === 'token-usage' ? 'token-usage' : 'basic';
+    window.__pendingSettingsSection = target;
+    switchPage('settings');
+    if (window.currentPage && window.currentPage() === 'settings') {
+        if (typeof switchSettingsSection === 'function') switchSettingsSection(target);
+    }
+}
+window.openSettingsSection = openSettingsSection;
 
 // 初始化页面
 async function initPage(pageId) {
