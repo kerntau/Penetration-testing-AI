@@ -47451,3 +47451,30 @@ html[data-theme="dark"] .token-usage-panel { --token-cache-color: #2dd4bf; }
     .token-usage-subtitle { max-width: 220px; line-height: 1.6; }
     .token-usage-trend-svg { min-width: 480px; }
 }
+
+/* 系统设置 → 用量与运维 → 运行日志 */
+.runtime-log-panel {
+    margin-top: 24px;
+}
+.runtime-log-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.runtime-log-actions select {
+    max-width: 260px;
+}
+.runtime-log-output {
+    max-height: 420px;
+    overflow: auto;
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-all;
+}

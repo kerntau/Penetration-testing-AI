@@ -52,7 +52,7 @@ An AI-driven 渗透测试 workbench: turn natural-language intent into auditable
 | Component | Technology | Role |
 | --- | --- | --- |
 | Runtime | Vanilla ES Modules + plain CSS | No framework, no bundler; edit and refresh |
-| i18n | i18next | Chinese/English, driven by `data-i18n` attributes |
+| UI language | Simplified Chinese only | Literal copy, no translation layer |
 | Markdown | marked + DOMPurify | Assistant message rendering with XSS sanitization |
 | Visualization | Cytoscape + ELK | Graph layout and relationship views |
 | Spreadsheets | xlsx.full.min.js | Vulnerability and asset export |
@@ -126,7 +126,7 @@ internal/multiagent/ # Eino runtime (compaction, middleware, streaming events)
 internal/mcp/        # MCP server and external MCP clients
 internal/security/   # command execution, process isolation, tool guard
 internal/database/   # SQLite storage
-web/                 # frontend (vanilla JS + i18n)
+web/                 # frontend (vanilla JS)
 roles/               # role-scoped test prompts
 skills/              # skill packages
 tools/               # tool recipes (YAML)

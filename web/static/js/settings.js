@@ -1660,7 +1660,7 @@ function renderExternalMcpFilterChip() {
     chip.style.display = 'inline-flex';
     chip.innerHTML = `
         <span>${t('mcp.filterBySource', { name: escapeHtml(toolsExternalMcpFilter) })}</span>
-        <button type="button" class="tools-source-filter-clear" onclick="clearExternalMcpFilter()" title="${escapeHtml(t('mcp.clearSourceFilter'))}">×</button>
+        <button type="button" class="tools-source-filter-clear" onclick="clearExternalMcpFilter()" title="${escapeHtml('清除来源筛选')}">×</button>
     `;
 }
 
@@ -1698,10 +1698,10 @@ function renderToolsPagination() {
     };
     pagination.innerHTML = `
         <div class="pagination-info">
-            ${paginationT('mcp.paginationInfo', { start: startItem, end: endItem, total: total })}${toolsSearchKeyword ? ` (${t('common.search')}: "${escapeHtml(toolsSearchKeyword)}")` : ''}
+            ${paginationT('mcp.paginationInfo', { start: startItem, end: endItem, total: total })}${toolsSearchKeyword ? ` (${'搜索'}: "${escapeHtml(toolsSearchKeyword)}")` : ''}
         </div>
         <div class="pagination-page-size">
-            <label for="tools-page-size-pagination">${t('mcp.perPage')}</label>
+            <label for="tools-page-size-pagination">${'每页:'}</label>
             <select id="tools-page-size-pagination" onchange="changeToolsPageSize()">
                 <option value="10" ${savedPageSize === 10 ? 'selected' : ''}>10</option>
                 <option value="20" ${savedPageSize === 20 ? 'selected' : ''}>20</option>
@@ -1710,11 +1710,11 @@ function renderToolsPagination() {
             </select>
         </div>
         <div class="pagination-controls">
-            <button class="btn-secondary" onclick="loadToolsList(1, ${settingsEscapeJsStringAttr(toolsSearchKeyword)})" ${page === 1 ? 'disabled' : ''}>${t('mcp.firstPage')}</button>
-            <button class="btn-secondary" onclick="loadToolsList(${page - 1}, ${settingsEscapeJsStringAttr(toolsSearchKeyword)})" ${page === 1 ? 'disabled' : ''}>${t('mcp.prevPage')}</button>
+            <button class="btn-secondary" onclick="loadToolsList(1, ${settingsEscapeJsStringAttr(toolsSearchKeyword)})" ${page === 1 ? 'disabled' : ''}>${'首页'}</button>
+            <button class="btn-secondary" onclick="loadToolsList(${page - 1}, ${settingsEscapeJsStringAttr(toolsSearchKeyword)})" ${page === 1 ? 'disabled' : ''}>${'上一页'}</button>
             <span class="pagination-page">${paginationT('mcp.pageInfo', { page: page, total: totalPages })}</span>
-            <button class="btn-secondary" onclick="loadToolsList(${page + 1}, ${settingsEscapeJsStringAttr(toolsSearchKeyword)})" ${page === totalPages ? 'disabled' : ''}>${t('mcp.nextPage')}</button>
-            <button class="btn-secondary" onclick="loadToolsList(${totalPages}, ${settingsEscapeJsStringAttr(toolsSearchKeyword)})" ${page === totalPages ? 'disabled' : ''}>${t('mcp.lastPage')}</button>
+            <button class="btn-secondary" onclick="loadToolsList(${page + 1}, ${settingsEscapeJsStringAttr(toolsSearchKeyword)})" ${page === totalPages ? 'disabled' : ''}>${'下一页'}</button>
+            <button class="btn-secondary" onclick="loadToolsList(${totalPages}, ${settingsEscapeJsStringAttr(toolsSearchKeyword)})" ${page === totalPages ? 'disabled' : ''}>${'末页'}</button>
         </div>
     `;
     
@@ -4601,7 +4601,7 @@ async function saveExternalMCP() {
     const t = (typeof window.t === 'function' ? window.t : function (k, opts) { return k; });
     // 验证必须是对象格式
     if (typeof configObj !== 'object' || Array.isArray(configObj) || configObj === null) {
-        errorDiv.textContent = t('mcp.configMustBeObject');
+        errorDiv.textContent = '配置错误: 必须是JSON对象格式，key为配置名称，value为配置内容';
         errorDiv.style.display = 'block';
         jsonTextarea.classList.add('error');
         return;
@@ -4610,7 +4610,7 @@ async function saveExternalMCP() {
     // 获取所有配置名称
     const names = Object.keys(configObj);
     if (names.length === 0) {
-        errorDiv.textContent = t('mcp.configNeedOne');
+        errorDiv.textContent = '配置错误: 至少需要一个配置项';
         errorDiv.style.display = 'block';
         jsonTextarea.classList.add('error');
         return;
@@ -4619,7 +4619,7 @@ async function saveExternalMCP() {
     // 验证每个配置
     for (const name of names) {
         if (!name || name.trim() === '') {
-            errorDiv.textContent = t('mcp.configNameEmpty');
+            errorDiv.textContent = '配置错误: 配置名称不能为空';
             errorDiv.style.display = 'block';
             jsonTextarea.classList.add('error');
             return;

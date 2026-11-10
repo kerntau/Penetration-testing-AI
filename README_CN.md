@@ -52,7 +52,7 @@ AI 驱动的渗透测试工作台：把自然语言意图转成可审计的渗�
 | 组件 | 技术 | 用途 |
 | --- | --- | --- |
 | 运行形态 | 原生 ES Module + 原生 CSS | 无框架、无打包步骤，改完刷新即生效 |
-| 国际化 | i18next | 中英双语，`data-i18n` 属性驱动 |
+| 界面语言 | 固定简体中文 | 直接书写中文文案，无翻译层 |
 | Markdown | marked + DOMPurify | 助手消息渲染与 XSS 净化 |
 | 可视化 | Cytoscape + ELK | 图谱布局与关系展示 |
 | 表格 | xlsx.full.min.js | 漏洞与资产数据导出 |
@@ -126,7 +126,7 @@ internal/multiagent/ # Eino 运行时（上下文压缩、中间件、流式事�
 internal/mcp/        # MCP 服务端与外部 MCP 客户端
 internal/security/   # 命令执行、进程隔离、调用拦截
 internal/database/   # SQLite 存储
-web/                 # 前端（原生 JS + i18n）
+web/                 # 前端（原生 JS）
 roles/               # 角色化测试配置
 skills/              # Skills 技能包
 tools/               # 工具配方（YAML）
@@ -150,7 +150,7 @@ go vet ./...            # 静态检查
 go test ./internal/...  # 单元测试
 ```
 
-前端为原生 ES Module + i18next，无构建步骤，直接修改 `web/static/` 后刷新即可。
+前端为原生 ES Module，无构建步骤，直接修改 `web/static/` 后刷新即可。
 
 ## 许可
 

@@ -83,8 +83,8 @@ function getCurrentTimeLocale() {
         if (window.__locale.startsWith('ru')) return 'ru-RU';
         return 'en-US';
     }
-    if (typeof i18next !== 'undefined' && i18next.language) {
-        const lang = String(i18next.language || '');
+    if (false) {
+        const lang = String('zh-CN' || '');
         if (lang.startsWith('zh')) return 'zh-CN';
         if (lang.startsWith('ru')) return 'ru-RU';
         return 'en-US';
@@ -5620,7 +5620,7 @@ function buildToolResultSectionHtml(data, opts) {
     if (opts.pending) {
         return (
             '<div class="tool-result-section pending">' +
-            '<strong data-i18n="timeline.executionResult">' + escapeHtml(execResultLabel) + '</strong>' +
+            '<strong>' + escapeHtml(execResultLabel) + '</strong>' +
             '<pre class="tool-result tool-result-pending">' + escapeHtml(waitingLabel) + '</pre>' +
             '</div>'
         );
@@ -5633,9 +5633,9 @@ function buildToolResultSectionHtml(data, opts) {
     const sectionClass = displayState.kind === 'blocked' ? 'blocked' : (displayState.kind === 'background_running' ? 'pending' : (displayState.isError ? 'error' : 'success'));
     return (
         '<div class="tool-result-section ' + sectionClass + '">' +
-        '<strong data-i18n="timeline.executionResult">' + escapeHtml(execResultLabel) + '</strong>' +
+        '<strong>' + escapeHtml(execResultLabel) + '</strong>' +
         '<pre class="tool-result">' + escapeHtml(rawText) + '</pre>' +
-        (data.executionId ? '<div class="tool-execution-id"><span data-i18n="timeline.executionId">' +
+        (data.executionId ? '<div class="tool-execution-id"><span>' +
             escapeHtml(execIdLabel) + '</span> <code>' + escapeHtml(String(data.executionId)) + '</code></div>' : '') +
         '</div>'
     );
@@ -5774,7 +5774,7 @@ async function renderToolCallDetailContent(item) {
         : '';
     const argsBlock = state.hideArgs ? '' :
         '<div class="tool-arg-section">' +
-        '<strong data-i18n="timeline.params">' + escapeHtml(paramsLabel) + '</strong>' +
+        '<strong>' + escapeHtml(paramsLabel) + '</strong>' +
         hitlEditedArgsLabel +
         '<pre class="tool-args">' + escapeHtml(JSON.stringify(args, null, 2)) + '</pre>' +
         '</div>';
@@ -5883,7 +5883,7 @@ function mergeToolResultIntoCallItem(item, data, options) {
             const execIdLabel = typeof window.t === 'function' ? window.t('timeline.executionId') : '执行ID:';
             execIdEl = document.createElement('div');
             execIdEl.className = 'tool-execution-id';
-            execIdEl.innerHTML = '<span data-i18n="timeline.executionId">' + escapeHtml(execIdLabel) +
+            execIdEl.innerHTML = '<span>' + escapeHtml(execIdLabel) +
                 '</span> <code></code>';
             section.appendChild(execIdEl);
         }
@@ -6678,7 +6678,7 @@ function stableActiveTasksForDisplay(tasks) {
 }
 
 function activeTasksRenderSignature(tasks) {
-    const language = typeof i18next !== 'undefined' && i18next.language ? i18next.language : getCurrentTimeLocale();
+    const language = false ? 'zh-CN' : getCurrentTimeLocale();
     return JSON.stringify({
         language: language,
         tasks: (Array.isArray(tasks) ? tasks : []).map(function (task) {

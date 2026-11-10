@@ -178,6 +178,8 @@ func New(cfg *config.Config, log *logger.Logger, configPath string) (*App, error
 	conversationHandler.SetTaskStopper(agentHandler)
 	conversationHandler.SetTaskStateProvider(agentHandler)
 
+	logHandler := handler.NewLogHandler(cfg, log.Logger)
+
 	app := &App{
 		config:         cfg,
 		logger:         log,
@@ -200,6 +202,7 @@ func New(cfg *config.Config, log *logger.Logger, configPath string) (*App, error
 		vulnerabilityHandler,
 		roleHandler,
 		skillsHandler,
+		logHandler,
 		mcpServer,
 		app,
 	)
@@ -356,6 +359,7 @@ func setupRoutes(
 	vulnerabilityHandler *handler.VulnerabilityHandler,
 	roleHandler *handler.RoleHandler,
 	skillsHandler *handler.SkillsHandler,
+	logHandler *handler.LogHandler,
 	mcpServer *mcp.Server,
 	app *App,
 ) {
@@ -453,6 +457,9 @@ func setupRoutes(
 		protected.DELETE("/skills/:name", skillsHandler.DeleteSkill)
 		protected.DELETE("/skills/:name/stats", skillsHandler.ClearSkillStatsByName)
 		protected.GET("/skills/:name", skillsHandler.GetSkill)
+
+		// 运行日志（系统设置 → 用量与运维）
+		protected.GET("/system/logs", logHandler.Recent)
 
 		// MCP端点
 		protected.POST("/mcp", func(c *gin.Context) {

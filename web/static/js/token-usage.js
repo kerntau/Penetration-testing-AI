@@ -287,3 +287,36 @@ function renderTokenUsageAnalysis(res) {
         return [Number.isFinite(time.getTime()) ? time.toLocaleString(window.__locale || 'zh-CN') : '—', row.model || '—', status, exact(row.totalTokens), exact(row.modelCalls)];
     }));
 }
+
+// 运行日志：读取 log/ 目录下日志文件的末尾内容（系统设置 → 用量与运维）。
+function refreshRuntimeLogs() {
+    const output = document.getElementById('runtime-log-output');
+    const picker = document.getElementById('runtime-log-file');
+    if (!output) return;
+    const file = picker && picker.value ? '&file=' + encodeURIComponent(picker.value) : '';
+    output.textContent = '加载中…';
+    fetch('/api/system/logs?lines=300' + file, { credentials: 'same-origin' })
+        .then((resp) => resp.json().then((body) => ({ ok: resp.ok, body })))
+        .then(({ ok, body }) => {
+            if (!ok) {
+                output.textContent = '读取失败：' + ((body && body.error) || '未知错误');
+                return;
+            }
+            if (picker && Array.isArray(body.files)) {
+                picker.innerHTML = body.files
+                    .map((name) => '<option value="' + name + '"' + (name === body.file ? ' selected' : '') + '>' + name + '</option>')
+                    .join('');
+            }
+            const lines = Array.isArray(body.lines) ? body.lines : [];
+            output.textContent = lines.length
+                ? (body.truncated ? '仅显示最近 ' + lines.length + ' 行\n' : '') + lines.join('\n')
+                : '暂无日志';
+        })
+        .catch((err) => {
+            output.textContent = '读取失败：' + (err && err.message ? err.message : err);
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    refreshRuntimeLogs();
+});

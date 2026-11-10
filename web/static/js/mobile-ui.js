@@ -88,41 +88,25 @@
         return node;
     }
 
-    /* 注入节点的文案：挂 data-i18n 后交给 i18n.js 的 applyTranslations 处理，
-       语言切换时会自动重译，不必在本层再存一份字典。
-       节点先写中文兜底——i18next 可能整体加载失败（离线/vendor 被拦）。
-       所有"中文兜底 + 键"的写入都必须经过下面这三个函数，本层其余位置不许再出现
-       裸的 setAttribute('aria-label', '中文')，否则防回潮测试无法区分兜底与绕过。 */
+    /* 动态节点的文案：直接写中文，不再经过翻译层。 */
     function translate(key, fallback, opts) {
-        if (typeof window.t === 'function') {
-            var s = window.t(key, opts);
-            if (s && s !== key) return s;
-        }
         return fallback.replace(/\{\{\s*(\w+)\s*\}\}/g, function (_, name) {
             return opts && Object.prototype.hasOwnProperty.call(opts, name) ? String(opts[name]) : '';
         });
     }
 
     function label(textNode, key, fallback) {
-        textNode.setAttribute('data-i18n', key);
         textNode.textContent = translate(key, fallback);
         return textNode;
     }
 
     function setAttrI18n(node, attr, key, fallback) {
-        var list = (node.getAttribute('data-i18n-attr') || '').split(',')
-            .map(function (s) { return s.trim(); })
-            .filter(function (s) { return s && s !== attr; });
-        list.push(attr);
-        node.setAttribute('data-i18n', key);
-        node.setAttribute('data-i18n-attr', list.join(','));
         node.setAttribute(attr, translate(key, fallback));
         return node;
     }
 
-    /* 带子节点（图标）的元素只能翻属性，不能翻 textContent，否则图标会被覆盖 */
+    /* 带子节点（图标）的元素只能写属性，不能改 textContent，否则图标会被覆盖 */
     function ariaLabel(node, key, fallback) {
-        node.setAttribute('data-i18n-skip-text', 'true');
         return setAttrI18n(node, 'aria-label', key, fallback);
     }
 
@@ -688,30 +672,6 @@
         return typeof window.t === 'function' ? (window.t('theme.' + resolved) || resolved) : resolved;
     }
 
-    /* 面板里可选的语言：以桌面端下拉里真实存在的选项为准，上游加语言不必改本层 */
-    function availableLocales() {
-        var seen = [];
-        $$('#lang-dropdown .lang-option').forEach(function (o) {
-            var lang = o.getAttribute('data-lang');
-            if (!lang) return;
-            if (seen.some(function (x) { return x.lang === lang; })) return;
-            seen.push({ lang: lang, name: (o.textContent || '').trim() });
-        });
-        if (!seen.length) seen = [{ lang: 'zh-CN', name: '中文' }, { lang: 'en-US', name: 'English' }];
-        return seen;
-    }
-
-    function cycleLanguage() {
-        var opts = availableLocales();
-        var cur = String(window.uiLocale ? window.uiLocale() : (document.documentElement.getAttribute('lang') || 'zh-CN'));
-        var idx = 0;
-        opts.forEach(function (o, i) { if (o.lang === cur) idx = i; });
-        var next = opts[(idx + 1) % opts.length];
-        if (typeof window.onLanguageSelect === 'function') {
-            window.onLanguageSelect(next.lang);
-            toast(next.name);
-        }
-    }
 
     function requestFullscreenSafe() {
         var root = document.documentElement;
@@ -773,7 +733,6 @@
             }
             toast(translate('mobile.themeNow', '当前主题：{{name}}', { name: currentThemeLabel() }));
         }, { keepOpen: true }));
-        body.appendChild(buildSheetItem('mobile.switchLanguage', '切换语言', 'lang', cycleLanguage, { keepOpen: true }));
 
         body.appendChild(el('div', 'm-sheet-sep'));
 

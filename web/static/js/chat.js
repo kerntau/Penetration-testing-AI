@@ -217,7 +217,7 @@ function currentChatAIChannelLabel() {
     const id = selectedChatAIChannelId() || chatDefaultAIChannel;
     const ch = id ? chatAIChannels[id] : null;
     if (!ch) {
-        return chatTranslate('chat.aiChannelDefaultShort', '默认通道');
+        return '默认通道';
     }
     return ch.name || id;
 }
@@ -312,7 +312,7 @@ function chatReasoningEffortLabel(value) {
         case 'high': return 'high';
         case 'xhigh': return 'xhigh';
         case 'max': return 'max';
-        default: return chatTranslate('chat.reasoningEffortUnset', '不指定');
+        default: return '不指定';
     }
 }
 
@@ -329,7 +329,7 @@ function currentChatReasoningMode() {
 
 function currentChatReasoningMenuLabel() {
     const modeValue = currentChatReasoningMode();
-    if (modeValue === 'off') return chatTranslate('chat.reasoningModeOff', '关闭');
+    if (modeValue === 'off') return '关闭';
     const effort = currentChatReasoningEffort();
     return effort ? chatReasoningEffortLabel(effort) : reasoningSummaryModeLabel(modeValue);
 }
@@ -399,7 +399,7 @@ function renderChatSystemModelOptions(models, currentModel) {
             option.classList.add('is-selected');
             const current = document.createElement('span');
             current.className = 'chat-system-model-current';
-            current.textContent = chatTranslate('chat.systemModelCurrent', '当前');
+            current.textContent = '当前';
             option.appendChild(current);
         }
         option.addEventListener('click', function (event) {
@@ -433,7 +433,7 @@ function renderChatReasoningEffortOptions() {
         if (effort === currentEffort) {
             const current = document.createElement('span');
             current.className = 'chat-system-model-current';
-            current.textContent = chatTranslate('chat.systemModelCurrent', '当前');
+            current.textContent = '当前';
             option.appendChild(current);
         }
         option.addEventListener('click', function (event) {
@@ -464,7 +464,7 @@ function renderChatReasoningModeOptions() {
         if (mode === currentMode) {
             const current = document.createElement('span');
             current.className = 'chat-system-model-current';
-            current.textContent = chatTranslate('chat.systemModelCurrent', '当前');
+            current.textContent = '当前';
             option.appendChild(current);
         }
         option.addEventListener('click', function (event) {
@@ -478,7 +478,7 @@ function renderChatReasoningModeOptions() {
 
 function finishChatReasoningPickerUpdate() {
     persistChatReasoningPrefs();
-    setChatSystemModelStatus(chatTranslate('chat.reasoningSessionUpdated', '会话推理设置已更新'), 'success');
+    setChatSystemModelStatus('会话推理设置已更新', 'success');
     if (chatSystemModelCloseTimer) window.clearTimeout(chatSystemModelCloseTimer);
     chatSystemModelCloseTimer = window.setTimeout(function () {
         chatSystemModelSaving = false;
@@ -516,7 +516,7 @@ function renderChatSystemModelRetry() {
     const retry = document.createElement('button');
     retry.type = 'button';
     retry.className = 'chat-system-model-retry';
-    retry.textContent = chatTranslate('chat.systemModelRetry', '重新获取');
+    retry.textContent = '重新获取';
     retry.addEventListener('click', function (retryEvent) {
         retryEvent.preventDefault();
         retryEvent.stopPropagation();
@@ -530,7 +530,7 @@ function renderChatAIChannelOptions() {
     if (!ui.list) return;
     ui.list.innerHTML = '';
     const selected = selectedChatAIChannelId();
-    const choices = [{ id: '', label: chatTranslate('chat.aiChannelDefault', '跟随默认通道') }]
+    const choices = [{ id: '', label: '跟随默认通道' }]
         .concat(Object.keys(chatAIChannels).sort().map(function (id) {
             const channel = chatAIChannels[id] || {};
             return { id: id, label: channel.name || id };
@@ -549,7 +549,7 @@ function renderChatAIChannelOptions() {
         if (choice.id === selected) {
             const current = document.createElement('span');
             current.className = 'chat-system-model-current';
-            current.textContent = chatTranslate('chat.systemModelCurrent', '当前');
+            current.textContent = '当前';
             option.appendChild(current);
         }
         option.addEventListener('click', function (event) {
@@ -569,7 +569,7 @@ async function selectChatAIChannel(channelId) {
     persistChatAIChannelPref();
     updateChatSystemModelPickerValues();
     openChatSystemModelView('main');
-    setChatSystemModelStatus(chatTranslate('chat.systemModelLoading', '正在获取模型列表…'), 'loading');
+    setChatSystemModelStatus('正在获取模型列表…', 'loading');
     await fetchChatSystemModelsForChannel(resolveChatPickerChannelId(), { force: true });
 }
 
@@ -590,28 +590,28 @@ function openChatSystemModelView(view, event) {
     ui.subview.hidden = false;
     ui.subview.dataset.view = view;
     if (view === 'channel') {
-        if (ui.subviewTitle) ui.subviewTitle.textContent = chatTranslate('chat.aiChannelLabel', 'AI 通道');
+        if (ui.subviewTitle) ui.subviewTitle.textContent = 'AI 通道';
         setChatSystemModelStatus('', '');
         renderChatAIChannelOptions();
         return;
     }
     if (view === 'mode') {
-        if (ui.subviewTitle) ui.subviewTitle.textContent = chatTranslate('chat.reasoningModeLabel', '推理模式');
+        if (ui.subviewTitle) ui.subviewTitle.textContent = '推理模式';
         setChatSystemModelStatus('', '');
         renderChatReasoningModeOptions();
         return;
     }
     if (view === 'effort') {
-        if (ui.subviewTitle) ui.subviewTitle.textContent = chatTranslate('chat.reasoningEffortLabel', '推理强度');
+        if (ui.subviewTitle) ui.subviewTitle.textContent = '推理强度';
         setChatSystemModelStatus('', '');
         renderChatReasoningEffortOptions();
         return;
     }
-    if (ui.subviewTitle) ui.subviewTitle.textContent = chatTranslate('chat.systemModelField', '模型');
+    if (ui.subviewTitle) ui.subviewTitle.textContent = '模型';
     if (chatSystemModelOptions.length) {
         const count = renderChatSystemModelOptions(chatSystemModelOptions, chatSystemModelCurrent);
         setChatSystemModelStatus(
-            chatTranslate('chat.systemModelLoaded', '已获取 {count} 个模型').replace('{count}', String(count)),
+            '已获取 {count} 个模型'.replace('{count}', String(count)),
             'success'
         );
     } else if (chatSystemModelLoadError) {
@@ -619,7 +619,7 @@ function openChatSystemModelView(view, event) {
         setChatSystemModelStatus(chatSystemModelLoadError, 'error');
     } else {
         ui.list.innerHTML = '';
-        setChatSystemModelStatus(chatTranslate('chat.systemModelLoading', '正在获取模型列表…'), 'loading');
+        setChatSystemModelStatus('正在获取模型列表…', 'loading');
     }
 }
 
@@ -633,11 +633,11 @@ async function selectChatSystemModel(model) {
     if (ui.list) {
         ui.list.querySelectorAll('button').forEach(function (button) { button.disabled = true; });
     }
-    setChatSystemModelStatus(chatTranslate('chat.systemModelSaving', '正在保存…'), 'loading');
+    setChatSystemModelStatus('正在保存…', 'loading');
     try {
         const latestResponse = await apiFetch('/api/config');
         if (!latestResponse.ok) {
-            throw new Error(await readChatSystemModelError(latestResponse, chatTranslate('chat.systemModelSaveFailed', '保存失败')));
+            throw new Error(await readChatSystemModelError(latestResponse, '保存失败'));
         }
         const latest = await latestResponse.json();
         const state = chatSystemModelConfigState(latest, resolveChatPickerChannelId());
@@ -648,11 +648,11 @@ async function selectChatSystemModel(model) {
             body: JSON.stringify({ ai: state.ai })
         });
         if (!updateResponse.ok) {
-            throw new Error(await readChatSystemModelError(updateResponse, chatTranslate('chat.systemModelSaveFailed', '保存失败')));
+            throw new Error(await readChatSystemModelError(updateResponse, '保存失败'));
         }
         const applyResponse = await apiFetch('/api/config/apply', { method: 'POST' });
         if (!applyResponse.ok) {
-            throw new Error(await readChatSystemModelError(applyResponse, chatTranslate('chat.systemModelApplyFailed', '应用模型失败')));
+            throw new Error(await readChatSystemModelError(applyResponse, '应用模型失败'));
         }
         chatAIChannels = state.ai.channels;
         chatDefaultAIChannel = resolveChatAIChannelId(state.ai.default_channel) || state.channelId;
@@ -661,7 +661,7 @@ async function selectChatSystemModel(model) {
         chatSystemModelOptions = [chosen].concat(chatSystemModelOptions);
         updateChatSystemModelPickerValues();
         renderChatSystemModelOptions(chatSystemModelOptions, chosen);
-        setChatSystemModelStatus(chatTranslate('chat.systemModelSaved', '已自动保存'), 'success');
+        setChatSystemModelStatus('已自动保存', 'success');
         if (chatSystemModelCloseTimer) window.clearTimeout(chatSystemModelCloseTimer);
         chatSystemModelCloseTimer = window.setTimeout(function () {
             chatSystemModelSaving = false;
@@ -670,7 +670,7 @@ async function selectChatSystemModel(model) {
         return;
     } catch (error) {
         console.error('selectChatSystemModel', error);
-        setChatSystemModelStatus(error.message || chatTranslate('chat.systemModelSaveFailed', '保存失败'), 'error');
+        setChatSystemModelStatus(error.message || '保存失败', 'error');
     }
     chatSystemModelSaving = false;
     if (ui.list) {
@@ -708,7 +708,7 @@ async function fetchChatSystemModelsForChannel(channelId, options) {
             .filter(function (model, index, all) { return model && all.indexOf(model) === index; })
             .length;
         setChatSystemModelStatus(
-            chatTranslate('chat.systemModelLoaded', '已获取 {count} 个模型').replace('{count}', String(cachedCount)),
+            '已获取 {count} 个模型'.replace('{count}', String(cachedCount)),
             'success'
         );
         return;
@@ -716,10 +716,10 @@ async function fetchChatSystemModelsForChannel(channelId, options) {
     if (ui.subview && !ui.subview.hidden && ui.subview.dataset.view === 'model') {
         ui.list.innerHTML = '';
     }
-    setChatSystemModelStatus(chatTranslate('chat.systemModelLoading', '正在获取模型列表…'), 'loading');
+    setChatSystemModelStatus('正在获取模型列表…', 'loading');
     try {
         if (!String(channel.api_key || '').trim()) {
-            throw new Error(chatTranslate('chat.systemModelNeedApiKey', '请先在系统设置中配置 API Key'));
+            throw new Error('请先在系统设置中配置 API Key');
         }
         const listResponse = await apiFetch('/api/config/list-models', {
             method: 'POST',
@@ -732,7 +732,7 @@ async function fetchChatSystemModelsForChannel(channelId, options) {
         });
         const result = await listResponse.json().catch(function () { return {}; });
         if (!listResponse.ok || !result.success) {
-            throw new Error(result.error || chatTranslate('chat.systemModelLoadFailed', '获取模型失败'));
+            throw new Error(result.error || '获取模型失败');
         }
         if (requestId !== chatSystemModelRequestSeq || ui.menu.hidden) return;
         chatSystemModelOptions = Array.isArray(result.models) ? result.models.slice() : [];
@@ -748,12 +748,12 @@ async function fetchChatSystemModelsForChannel(channelId, options) {
             renderChatSystemModelOptions(chatSystemModelOptions, chatSystemModelCurrent);
         }
         setChatSystemModelStatus(
-            chatTranslate('chat.systemModelLoaded', '已获取 {count} 个模型').replace('{count}', String(count)),
+            '已获取 {count} 个模型'.replace('{count}', String(count)),
             'success'
         );
     } catch (error) {
         if (requestId !== chatSystemModelRequestSeq || ui.menu.hidden) return;
-        chatSystemModelLoadError = error.message || chatTranslate('chat.systemModelLoadFailed', '获取模型失败');
+        chatSystemModelLoadError = error.message || '获取模型失败';
         if (ui.subview && !ui.subview.hidden && ui.subview.dataset.view === 'model') {
             renderChatSystemModelRetry();
         }
@@ -805,10 +805,10 @@ function persistChatAIChannelPref() {
 function reasoningSummaryModeLabel(mode) {
     const m = (mode || 'default').trim();
     switch (m) {
-        case 'off': return chatTranslate('chat.reasoningModeOff', '关闭');
-        case 'on': return chatTranslate('chat.reasoningModeOn', '开启');
-        case 'auto': return chatTranslate('chat.reasoningModeAuto', '自动');
-        default: return chatTranslate('chat.reasoningSummaryFollow', '系统');
+        case 'off': return '关闭';
+        case 'on': return '开启';
+        case 'auto': return '自动';
+        default: return '系统';
     }
 }
 
@@ -827,7 +827,7 @@ function updateChatComposerSessionShortcuts() {
         if (shortcut) {
             const channel = currentChatAIChannelLabel();
             const effort = currentChatReasoningMenuLabel();
-            const action = chatTranslate('chat.modelSettingsAria', '选择 AI 通道、模型与推理设置');
+            const action = '选择 AI 通道、模型与推理设置';
             shortcut.setAttribute('aria-label', action + '：' + channel + ' · ' + label + ' · ' + effort);
             shortcut.title = action + '：' + channel + ' · ' + label + ' · ' + effort;
         }
@@ -938,8 +938,8 @@ function updateChatPrimaryActionState() {
     if (!button) return;
     const running = isCurrentChatTaskActive();
     const label = running
-        ? chatTranslate('tasks.stopTask', '停止任务')
-        : chatTranslate('chat.send', '发送');
+        ? '停止任务'
+        : '发送';
     button.classList.toggle('is-task-running', running);
     button.setAttribute('aria-label', label);
     button.setAttribute('title', label);
@@ -1157,7 +1157,7 @@ async function sendMessage(options = {}) {
     }
     if (isCurrentChatTaskActive()) {
         updateChatPrimaryActionState();
-        showChatToast(chatTranslate('chat.taskAlreadyRunning', '当前会话已有任务正在执行，请先等待完成或停止任务。'), 'info');
+        showChatToast('当前会话已有任务正在执行，请先等待完成或停止任务。', 'info');
         return;
     }
 
@@ -4205,11 +4205,9 @@ function renderMCPDetailModal(exec) {
         errorElement.textContent = '';
     }
     setMCPResultDetailTabs('raw', false);
-    const resultTabLabel = document.querySelector('#detail-result-tab-success [data-i18n]');
+    const resultTabLabel = document.querySelector('#detail-result-tab-success span');
     if (resultTabLabel) {
-        const key = blocked ? 'mcpDetailModal.blockReason' : 'mcpDetailModal.correctInfo';
-        resultTabLabel.dataset.i18n = key;
-        resultTabLabel.textContent = typeof window.t === 'function' ? window.t(key) : (blocked ? '拦截原因' : '正确信息');
+        resultTabLabel.textContent = blocked ? '拦截原因' : '正确信息';
     }
 
     if (exec.result) {
@@ -5521,7 +5519,7 @@ async function fetchAllConversations(searchQuery) {
 }
 
 function getConversationListEmptyHtml() {
-    return '<div class="conversations-list-empty" data-i18n="chat.noHistoryConversations"></div>';
+    return '<div class="conversations-list-empty">暂无历史对话</div>';
 }
 
 function renderConversationsPagination(visibleCount) {
@@ -6058,21 +6056,21 @@ function ensureConversationRenameModal() {
             <div class="projects-modal-header">
                 <div class="projects-modal-header-text">
                     <div>
-                        <h3 id="conversation-rename-title" data-i18n="chat.renameConversationTitle">重命名对话</h3>
-                        <p class="projects-modal-subtitle" data-i18n="chat.renameConversationSubtitle">修改后会同步更新项目文件夹和最近对话中的名称</p>
+                        <h3 id="conversation-rename-title">重命名对话</h3>
+                        <p class="projects-modal-subtitle">修改后会同步更新项目文件夹和最近对话中的名称</p>
                     </div>
                 </div>
-                <button type="button" class="projects-modal-close" data-conversation-rename-close aria-label="关闭" data-i18n="common.close" data-i18n-attr="aria-label" data-i18n-skip-text="true">&times;</button>
+                <button type="button" class="projects-modal-close" data-conversation-rename-close aria-label="关闭">&times;</button>
             </div>
             <div class="projects-modal-body">
                 <div class="projects-form-field">
-                    <label for="conversation-rename-input" data-i18n="chat.conversationTitleLabel">对话名称</label>
-                    <input type="text" id="conversation-rename-input" class="form-input" maxlength="200" autocomplete="off" data-i18n="chat.conversationTitlePlaceholder" data-i18n-attr="placeholder" placeholder="请输入对话名称">
+                    <label for="conversation-rename-input">对话名称</label>
+                    <input type="text" id="conversation-rename-input" class="form-input" maxlength="200" autocomplete="off" placeholder="请输入对话名称">
                 </div>
             </div>
             <div class="projects-modal-footer">
-                <button class="btn-secondary" type="button" data-conversation-rename-close data-i18n="common.cancel">取消</button>
-                <button class="btn-primary" type="button" id="conversation-rename-submit" data-i18n="contextMenu.rename">重命名</button>
+                <button class="btn-secondary" type="button" data-conversation-rename-close>取消</button>
+                <button class="btn-primary" type="button" id="conversation-rename-submit">重命名</button>
             </div>
         </div>`;
     modal.addEventListener('click', (event) => {
@@ -6554,7 +6552,7 @@ function renderBatchConversations(filtered = null) {
         const time = document.createElement('div');
         time.className = 'batch-table-col-time';
         const dateObj = conv.updatedAt ? new Date(conv.updatedAt) : new Date();
-        const locale = (typeof i18next !== 'undefined' && i18next.language) ? i18next.language : 'zh-CN';
+        const locale = 'zh-CN';
         time.textContent = dateObj.toLocaleString(locale, {
             year: 'numeric',
             month: '2-digit',
@@ -6705,10 +6703,10 @@ function refreshChatPanelI18n() {
             const detailsId = messageId ? 'process-details-' + messageId : '';
             const timeline = detailsId ? document.getElementById(detailsId) && document.getElementById(detailsId).querySelector('.progress-timeline') : null;
             const expanded = timeline && timeline.classList.contains('expanded');
-            span.textContent = expanded ? t('tasks.collapseDetail') : t('chat.expandDetail');
+            span.textContent = expanded ? '收起详情' : '展开详情';
         });
-        const copyLabel = t('common.copy');
-        const copyTitle = t('chat.copyMessageTitle');
+        const copyLabel = '复制';
+        const copyTitle = '复制消息内容';
         messagesEl.querySelectorAll('.message-copy-btn').forEach(function (btn) {
             if (btn.dataset.copySuccessActive === '1') return;
             const span = btn.querySelector('span');
